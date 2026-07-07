@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aurora AI — Clinical Console</title>
+<link rel="stylesheet" href="styles.css?v=9">
+</head>
+<body>
+
+<!-- ================= SIGN IN ================= -->
+<div id="authScreen" class="auth">
+  <div class="hero">
+    <div class="z wm"><span class="m"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 13c3-6 6-9 9-9s6 3 9 9"/><path d="M3 13c3 6 6 9 9 9"/><circle cx="12" cy="13" r="2.4" fill="#fff" stroke="none"/></svg></span> Aurora&nbsp;AI</div>
+    <div class="z">
+      <h2>Precision brain-tumour detection, at the point of care.</h2>
+      <p>Upload MRI studies, run validated AI models, and read explainable results — in one clinical console.</p>
+      <div class="stat-row">
+        <div class="s"><b class="tnum" data-count="5">0</b><span>AI models</span></div>
+        <div class="s"><b class="tnum" data-count="98">0</b><span>% uptime</span></div>
+        <div class="s"><b class="tnum" data-count="12400">0</b><span>studies read</span></div>
+      </div>
+    </div>
+    <div class="z" style="font-size:.76rem;color:#7d93af">Research preview · sample data · not for clinical use</div>
+  </div>
+  <div class="form">
+    <div class="box">
+      <div class="brandline"><span class="mk"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 13c3-6 6-9 9-9s6 3 9 9"/><path d="M3 13c3 6 6 9 9 9"/></svg></span><div class="tx"><b>Aurora&nbsp;AI</b><span>Clinical Console</span></div></div>
+      <h1 style="font-size:1.5rem">Welcome back</h1>
+      <p class="muted" style="margin:6px 0 22px;font-size:.9rem">Sign in to access advanced brain-tumour detection tools.</p>
+      <div class="stack" style="gap:14px">
+        <div class="field"><label>Email</label><input class="input" id="authEmail" value="dr.reyes@aurora.health" autocomplete="username"></div>
+        <div class="field"><label>Password</label><input class="input" id="authPass" type="password" value="••••••••••" autocomplete="current-password"></div>
+        <button class="btn primary" id="signInBtn" style="justify-content:center;padding:.72rem">Sign in</button>
+        <div class="between" style="font-size:.82rem"><label class="muted" style="display:flex;gap:7px;align-items:center;text-transform:none;letter-spacing:0;font-weight:400"><input type="checkbox" checked> Remember me</label><a href="#">Forgot password?</a></div>
+        <div style="text-align:center;font-size:.82rem;color:var(--muted);margin-top:6px">Demo — any details work. <a href="#" id="quickIn">Skip &amp; enter →</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="appShell" class="app" hidden>
+  <nav class="rail">
+    <div class="brand" title="Aurora AI"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 13c3-6 6-9 9-9s6 3 9 9"/><path d="M3 13c3 6 6 9 9 9"/><circle cx="12" cy="13" r="2.2" fill="#fff" stroke="none"/></svg></div>
+    <div class="rail-links" id="railLinks"></div>
+    <div class="rail-foot">
+      <button class="rail-link" data-route="settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="tip">Settings</span></button>
+      <div class="rail-ava" id="railAva" title="Account">DR</div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumb" id="crumb"><b>Dashboard</b></div>
+      <label class="search" style="position:relative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-3.6-3.6"/></svg><input id="globalSearch" aria-label="Search patients, MRN and reports" placeholder="Search patients, MRN, reports…  (Ctrl K)"><div class="search-pop" id="searchPop"></div></label>
+      <div class="top-actions">
+        <button class="icon-btn" id="cmdkBtn" title="Command palette (Ctrl K)" aria-label="Open command palette"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6v6H9z"/></svg></button>
+        <button class="icon-btn" id="aboutBtn" title="About this build" aria-label="About this build"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg></button>
+        <button class="icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications"><span class="dot" id="notifDot"></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></button>
+        <div class="userchip" id="userChip"><span class="av" id="userAv">DR</span><div class="who"><b id="userName">Dr. —</b><span id="userRole">—</span></div></div>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view">
+        <div class="page-head"><div><h1>Good morning, <span id="dashFirst">Doctor</span></h1><p id="dashSub">Here's what's happening across your studies today.</p></div><button class="btn primary" data-route="add-patient"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> New analysis</button></div>
+        <div class="kpis" id="dashKpis"></div>
+        <div class="grid-2" style="margin-top:18px">
+          <div class="stack">
+            <div class="card"><div class="card-h"><div><h3>Recent studies</h3><div class="sub">Latest patients analysed</div></div><button class="btn sm ghost" data-route="patients">View all →</button></div><div class="tablewrap"><table class="tbl" id="dashRecent"></table></div></div>
+            <div class="grid-3" id="quickActions"></div>
+          </div>
+          <div class="stack">
+            <div class="card pad"><div class="between" style="margin-bottom:14px"><h3 style="font-size:1rem">Model usage</h3><span class="chip">this week</span></div><div id="modelUsage"></div></div>
+            <div class="card pad"><h3 style="font-size:1rem;margin-bottom:6px">Activity</h3><div class="feed" id="activityFeed"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PATIENTS -->
+      <section id="view-patients" class="view">
+        <div class="page-head"><div><h1>Patients</h1><p>All studies uploaded to your workspace.</p></div><button class="btn primary" data-route="add-patient"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> New analysis</button></div>
+        <div class="card">
+          <div class="card-h"><label class="search" style="max-width:320px;margin:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-3.6-3.6"/></svg><input id="patientSearch" placeholder="Search name or MRN…"></label><div class="tabs" id="patientFilter"><button class="tab active" data-f="all">All</button><button class="tab" data-f="Analyzed">Analyzed</button><button class="tab" data-f="Pending">Pending</button><button class="tab" data-f="In Review">In Review</button></div></div>
+          <div class="tablewrap"><table class="tbl" id="patientsTable"></table></div>
+        </div>
+      </section>
+
+      <!-- ADD PATIENT -->
+      <section id="view-add-patient" class="view">
+        <div class="page-head"><div><h1>New analysis</h1><p>Step 1 of 3 — patient details &amp; scan upload.</p></div></div>
+        <div id="wizardSteps"></div>
+        <div class="grid-2" style="margin-top:18px;align-items:start">
+          <div class="card pad">
+            <h3 style="font-size:1rem;margin-bottom:16px">Patient details</h3>
+            <div class="stack" style="gap:14px">
+              <div class="row"><div class="field" style="flex:1"><label>Full name</label><input class="input" id="apName" placeholder="e.g. Jordan Alvarez"></div><div class="field" style="width:130px"><label>MRN</label><input class="input" id="apMrn" placeholder="auto"></div></div>
+              <div class="row"><div class="field" style="width:120px"><label>Age</label><input class="input" id="apAge" type="number" placeholder="47"></div><div class="field" style="flex:1"><label>Sex</label><select class="input" id="apSex"><option>Female</option><option>Male</option><option>Other</option></select></div></div>
+            </div>
+          </div>
+          <div class="card pad">
+            <h3 style="font-size:1rem;margin-bottom:16px">Upload MRI scans</h3>
+            <div class="drop" id="dropzone"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg></div><b style="color:var(--ink)">Drop DICOM / PNG scans here</b><div style="font-size:.82rem;margin-top:4px">or click to browse · demo loads a sample series</div></div>
+            <div id="uploadList" style="margin-top:14px"></div>
+          </div>
+        </div>
+        <div class="between" style="margin-top:20px"><button class="btn ghost" data-route="dashboard">Cancel</button><button class="btn primary" id="apNext">Continue to scan selection →</button></div>
+      </section>
+
+      <!-- IMAGE SELECTION -->
+      <section id="view-image-selection" class="view">
+        <div class="page-head"><div><h1>Select scans &amp; model</h1><p>Step 2 of 3 — choose slices and the AI model to run.</p></div></div>
+        <div id="wizardSteps2"></div>
+        <div class="grid-2" style="margin-top:18px;align-items:start">
+          <div class="card"><div class="card-h"><div><h3>Scan series</h3><div class="sub" id="scanCountLbl">Select the slices to analyse</div></div><button class="btn sm ghost" id="selectAllBtn">Select all</button></div><div class="card-b"><div class="thumbs" id="scanThumbs"></div></div></div>
+          <div class="stack">
+            <div class="card pad">
+              <h3 style="font-size:1rem;margin-bottom:14px">Model</h3>
+              <div class="stack" style="gap:14px">
+                <div class="field"><label>AI model</label><select class="input" id="modelSel"></select></div>
+                <div class="field"><label>Categories</label><select class="input" id="labelSel"></select></div>
+              </div>
+              <div class="explain" id="explainer" style="margin-top:16px"></div>
+            </div>
+            <button class="btn primary" id="runBtn" style="justify-content:center;padding:.8rem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg> Run prediction</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESULTS -->
+      <section id="view-results" class="view"></section>
+
+      <!-- REPORTS -->
+      <section id="view-reports" class="view">
+        <div class="page-head"><div><h1>Reports</h1><p>Generated study reports, ready to share or export.</p></div></div>
+        <div class="grid-3" id="reportsGrid"></div>
+      </section>
+
+      <!-- DOCUMENTATION -->
+      <section id="view-documentation" class="view">
+        <div class="page-head"><div><h1>Documentation</h1><p>How to use Aurora and what the models mean.</p></div></div>
+        <div class="grid-2" style="align-items:start">
+          <div class="stack" id="docsBody"></div>
+          <div class="card pad"><h3 style="font-size:1rem;margin-bottom:10px">Category glossary</h3><dl id="glossary" style="margin:0"></dl></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="view-settings" class="view">
+        <div class="page-head"><div><h1>Settings</h1><p>Manage your account and preferences.</p></div></div>
+        <div class="tabs" id="settingsTabs" style="margin-bottom:18px"><button class="tab active" data-s="account">Account</button><button class="tab" data-s="appearance">Appearance</button><button class="tab" data-s="notifications">Notifications</button></div>
+        <div id="settingsBody"></div>
+      </section>
+
+      <!-- COMPARE -->
+      <section id="view-compare" class="view">
+        <div class="page-head"><div><h1>Model comparison</h1><p>Run two models on the same scan set and see them side by side.</p></div></div>
+        <div class="card pad" style="margin-bottom:16px">
+          <div class="row" style="gap:16px;align-items:flex-end">
+            <div class="field" style="flex:1;min-width:190px"><label>Model A</label><select class="input" id="cmpA"></select></div>
+            <div class="field" style="flex:1;min-width:190px"><label>Model B</label><select class="input" id="cmpB"></select></div>
+            <div class="field" style="width:130px"><label>Slices</label><input class="input" id="cmpN" type="number" value="6" min="1" max="12"></div>
+            <button class="btn primary" id="cmpRun"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 3l14 9-14 9V3z"/></svg> Run comparison</button>
+          </div>
+        </div>
+        <div id="cmpResult"></div>
+      </section>
+
+      <!-- AUDIT -->
+      <section id="view-audit" class="view">
+        <div class="page-head"><div><h1>Audit log</h1><p>Every action taken this session, for accountability.</p></div><button class="btn sm" id="auditClear">Clear log</button></div>
+        <div class="card"><div class="tablewrap"><table class="tbl" id="auditTable"></table></div></div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="view-about" class="view">
+        <div class="page-head"><div><h1>About this build</h1><p>What changed on the <code>adding_models</code> branch.</p></div></div>
+        <div id="aboutBody"></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="notif-panel" id="notifPanel" role="dialog" aria-label="Notifications"></div>
+<div class="cmdk-scrim" id="cmdkScrim" role="dialog" aria-label="Command palette"></div>
+<div class="tour-scrim" id="tourScrim"></div>
+<div id="printArea"></div>
+<div id="modalRoot"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="data.js?v=9"></script>
+<script src="app.js?v=9"></script>
+</body>
+</html>
