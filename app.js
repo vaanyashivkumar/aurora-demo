@@ -408,7 +408,11 @@ function animHome(){
   staggerIn('.cap-grid .cap',{trigger:'.cap-grid',y:26});
   staggerIn('.models-grid .mcard',{trigger:'.models-grid',y:28});
   gsap.from('.player',{y:34,opacity:0,duration:.7,ease:EASE,clearProps:'transform,opacity',scrollTrigger:{trigger:'.player',start:'top 90%',once:true}});
-  hoverGlow('.mcard, .cap','rgba(14,168,150,.5)');
+  hoverGlow('.mcard, .cap-grid .cap','rgba(14,168,150,.5)');
+  const player=document.querySelector('.player');
+  if(player){const base=getComputedStyle(player).boxShadow;
+    player.addEventListener('mouseenter',()=>gsap.to(player,{y:-4,boxShadow:'0 34px 70px -30px rgba(16,32,56,.55)',duration:.4,ease:'power2.out'}));
+    player.addEventListener('mouseleave',()=>gsap.to(player,{y:0,boxShadow:base,duration:.45,ease:'power2.out'}));}
 }
 function animDashboard(){
   gsap.from('#dashKpis .kpi',{y:22,opacity:0,duration:.6,stagger:.08,ease:EASE,clearProps:'transform,opacity'});
@@ -446,46 +450,74 @@ const HOME = {
     ]
   },
   story:{steps:[
-    {title:"Secure sign-in",caption:"A clinician authenticates to enter the encrypted clinical console.",url:"/sign-in"},
-    {title:"Dashboard overview",caption:"The dashboard shows the patient roster, recent scan activity, low-confidence auto-alerts and quick actions.",url:"/dashboard"},
-    {title:"Add patient & upload MRI",caption:"A new patient record is created and their MRI scan series is uploaded, ready for analysis.",url:"/patients/new"},
-    {title:"Choose an AI model",caption:"Pick from five models — including the two new ones, End-to-End CNN (GBM/MET/NON) and Model 1 CNN (TUM/NON).",url:"/image-selection"},
-    {title:"Prediction results",caption:"The model scores every slice: per-slice probability bars, an aggregate donut and an overall confidence score.",url:"/prediction"},
-    {title:"Scan viewer & heatmap",caption:"Inspect each slice and toggle the Grad-CAM heatmap — available for Sienna, NeuroXAI and Inception.",url:"/prediction/viewer"},
-    {title:"Model consensus",caption:"Run two models side by side on the same series to see where they agree before reporting.",url:"/consensus"}
+    {title:"Homepage",caption:"You land on the Aurora AI home — an overview of the platform and its five AI models.",url:"/"},
+    {title:"Dashboard Overview",caption:"The dashboard summarises patients, recent analyses and average model confidence at a glance.",url:"/dashboard"},
+    {title:"Key Insights",caption:"Drill into the aggregated class breakdown and the recommended next action.",url:"/dashboard/insights"},
+    {title:"AI Analysis",caption:"Upload a scan series and run a model — including the two new PyTorch models.",url:"/analysis"},
+    {title:"Model Consensus",caption:"Run two models on the same scans and confirm where they agree.",url:"/consensus"},
+    {title:"Final Output",caption:"A concise, report-ready recommendation: top class, confidence and next step.",url:"/report"},
+    {title:"Take Action",caption:"Export the PDF report, record feedback, or start the next analysis.",url:"/report"}
   ]}
 };
 
 let PLAYER={i:0,timer:null,steps:[]};
 const PL_DUR=4200;
+function wfRail(active){
+  const items=[ICON.home,ICON.dashboard,ICON.scan,ICON.compare,ICON.reports];
+  return `<div class="wf-rail"><div class="wf-brand">${svg(ICON.brain,15)}</div>${items.map((ic,k)=>`<div class="wf-rd ${k===active?'active':''}">${svg(ic,15)}</div>`).join('')}</div>`;
+}
+function wfBar(vec,opts={}){const t=vec.reduce((a,b)=>a+b,0)||1;return `<div class="wf-bar"${opts.full?' style="width:100%;height:9px"':''}>${vec.map((p,k)=>`<span style="width:${(p/t*100).toFixed(1)}%;background:${COLORS[k%COLORS.length]}"></span>`).join('')}</div>`;}
+function wfShell(active,heading,loc,body){
+  return `<div class="wf-screen">${wfRail(active)}<div class="wf-main"><div class="wf-head"><h4>${heading}</h4><span class="wf-loc">${loc}</span></div><div class="wf-body">${body}</div></div></div>`;
+}
 function frameVisual(i){
-  if(i===0)return `<div style="display:grid;place-items:center;height:100%"><div class="mini-card" style="width:250px;text-align:center"><div style="width:40px;height:40px;border-radius:12px;margin:0 auto 10px;background:linear-gradient(145deg,var(--teal),var(--violet));display:grid;place-items:center;color:#fff">${svg(ICON.brain,22)}</div><b>Aurora AI</b><div class="muted" style="font-size:.76rem;margin-bottom:12px">Clinical Console</div><div class="mini-sel" style="margin-bottom:8px;color:var(--muted)">dr.reyes@aurora.health</div><div class="mini-sel" style="margin-bottom:12px;color:var(--muted)">••••••••</div><div class="btn primary" style="justify-content:center">Sign in</div></div></div>`;
-  if(i===1)return `<div class="mini-kpis" style="margin-bottom:10px">${[['Patients','16'],['Analyses','9'],['Avg conf.','73%']].map(k=>`<div class="mini-kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div></div>`).join('')}</div><div class="mini-card"><b style="font-size:.8rem">Recent studies</b>${[['Marcus Delgado','MD',0,[0.8,0.15,0.05]],['Priya Nair','PN',3,[0.4,0.5,0.1]],['Kwame Osei','KO',6,[0.1,0.85,0.05]]].map(r=>`<div class="mini-row"><span class="pt-ava" style="width:26px;height:26px;background:${AV_COLORS[r[2]%AV_COLORS.length]}">${r[1]}</span><div style="flex:1;font-size:.8rem;font-weight:600">${r[0]}</div><div style="width:88px">${miniBar(r[3])}</div></div>`).join('')}</div>`;
-  if(i===2)return `<div class="mini-card"><b style="font-size:.8rem">Upload MRI scans</b><div class="drop" style="padding:16px;margin:8px 0">${svg('<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',20)}<div style="font-size:.76rem;margin-top:4px">Drop DICOM / PNG scans</div></div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">${Array.from({length:6},(_,k)=>`<div style="aspect-ratio:1;border-radius:7px;overflow:hidden;border:1px solid var(--line)">${scanSVG(k+2)}</div>`).join('')}</div></div>`;
-  if(i===3)return `<div class="mini-card"><b style="font-size:.8rem">Choose a model</b><div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${[['Sienna',0],['NeuroXAI',0],['Inception',0],['End-to-End CNN',1],['Model 1 CNN',1]].map(m=>`<div class="mini-opt ${m[1]?'hot':''}"><span>${m[0]}</span>${m[1]?'<span class="chip new" style="padding:.05rem .4rem">NEW</span>':''}</div>`).join('')}</div></div>`;
-  if(i===4)return `<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:12px"><div class="mini-card"><b style="font-size:.78rem">Scan predictions</b>${[[0.82,0.12,0.06],[0.15,0.75,0.1],[0.3,0.25,0.45]].map(v=>`<div style="margin:8px 0">${stackBar(v)}</div>`).join('')}</div><div class="mini-card" style="display:grid;place-items:center">${donut([0.6,0.28,0.12],['GBM','MET','NON'],118)}</div></div>`;
-  if(i===5)return `<div class="mini-card"><div class="between" style="margin-bottom:8px"><b style="font-size:.78rem">Scan viewer</b><span class="chip good">Heatmap: on</span></div><div class="viewer" style="height:150px;aspect-ratio:auto">${scanVisual(null,2,{heat:true,hc:'#ff5a3c'})}<div class="scanline"></div></div></div>`;
-  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="mini-card" style="text-align:center"><b style="font-size:.76rem">Sienna</b>${donut([0.7,0.2,0.1],['GBM','MET','NON'],104)}</div><div class="mini-card" style="text-align:center"><b style="font-size:.76rem">End-to-End CNN</b>${donut([0.66,0.24,0.1],['GBM','MET','NON'],104)}</div></div>`;
+  switch(i){
+    case 0: return wfShell(0,'Welcome to Aurora AI','Home',
+      `<div class="wf-hero"><div><div class="wf-brand" style="width:46px;height:46px;margin:0 auto 12px">${svg(ICON.brain,24)}</div><div style="font-size:1.1rem;font-weight:800;color:var(--ink)">Aurora AI</div><div style="font-size:.82rem;color:var(--muted);margin:4px 0 14px">Clinical AI for brain-MRI tumour detection</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">${[['5','models'],['2','new'],['16','patients']].map(s=>`<span class="wf-chip"><b style="color:var(--ink)">${s[0]}</b>&nbsp;${s[1]}</span>`).join('')}</div><span class="wf-cta">${svg(ICON.plus,15)} Start an analysis</span></div></div>`);
+    case 1: return wfShell(1,'Dashboard Overview','Dashboard',
+      `<div class="wf-kpis">${[['Patients','16'],['Analyses','9'],['Avg conf.','73%']].map(k=>`<div class="wf-kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div></div>`).join('')}</div>
+       <div class="wf-card"><div class="ct">Recent studies</div>${[['Marcus Delgado','MD',0,[.8,.15,.05]],['Priya Nair','PN',3,[.4,.5,.1]],['Kwame Osei','KO',6,[.1,.85,.05]]].map(r=>`<div class="wf-row"><span class="wf-ava" style="background:${AV_COLORS[r[2]%AV_COLORS.length]}">${r[1]}</span><span class="wf-name">${r[0]}</span>${wfBar(r[3])}</div>`).join('')}</div>`);
+    case 2: return wfShell(1,'Key Insights','Dashboard',
+      `<div class="wf-split"><div class="wf-donut">${donut([.6,.28,.12],['GBM','MET','NON'],118)}</div><div>${[['GBM','60%',0],['MET','28%',1],['NON','12%',2]].map(c=>`<div class="wf-krow"><span class="wf-sw" style="background:${COLORS[c[2]]}"></span><span class="wf-name">${c[0]}</span><b>${c[1]}</b></div>`).join('')}<div class="wf-chip hot" style="margin-top:10px">${svg(ICON.warn,12)}&nbsp;Recommend MDT review</div></div></div>`);
+    case 3: return wfShell(2,'AI Analysis','New analysis',
+      `<div class="wf-thumbs">${Array.from({length:6},(_,k)=>`<div class="wf-thumb">${scanSVG(k+2)}</div>`).join('')}</div>
+       <div class="wf-opts">${[['Sienna',0],['End-to-End CNN',1],['Model 1 CNN',1]].map(m=>`<div class="wf-opt ${m[1]?'hot':''}"><span>${m[0]}</span>${m[1]?'<span class="wf-badge">NEW</span>':''}</div>`).join('')}</div>`);
+    case 4: return wfShell(3,'Model Consensus','Consensus',
+      `<div class="wf-split" style="grid-template-columns:1fr 1fr">${[['Sienna',[.7,.2,.1]],['End-to-End CNN',[.66,.24,.1]]].map(m=>`<div class="wf-donut"><div class="wf-name" style="margin-bottom:4px">${m[0]}</div>${donut(m[1],['GBM','MET','NON'],94)}</div>`).join('')}</div><div class="wf-chip hot" style="margin-top:10px">${svg('<path d="M20 6 9 17l-5-5"/>',12)}&nbsp;Models agree · GBM</div>`);
+    case 5: return wfShell(4,'Final Output','Reports',
+      `<div class="wf-card"><div class="ct">Recommendation</div><div style="font-size:1.2rem;font-weight:800;color:var(--ink)">Glioblastoma (GBM)</div><div style="font-size:.8rem;color:var(--muted);margin:3px 0 10px">Top class · 85% mean confidence across 6 slices</div>${wfBar([.85,.1,.05],{full:true})}<div class="wf-chip" style="margin-top:12px">Next step: refer to neuro-oncology MDT</div></div>`);
+    default: return wfShell(4,'Next Steps','Reports',
+      `<div class="wf-actions">${[[ICON.file,'Export PDF'],[ICON.refresh,'Record feedback'],[ICON.plus,'New analysis']].map(a=>`<div class="wf-action"><div class="ic">${svg(a[0],18)}</div>${a[1]}</div>`).join('')}</div>`);
+  }
 }
 function showFrame(i){
   PLAYER.i=i;
-  $$('#plScreen .frame').forEach(f=>f.classList.toggle('on',+f.dataset.fr===i));
+  const frames=$$('#plScreen .frame');
+  frames.forEach(f=>f.classList.toggle('on',+f.dataset.fr===i));
   const s=PLAYER.steps[i]; const u=$('#plUrl'); if(u)u.textContent='aurora.health'+(s.url||'');
-  const cc=$('#plCount'); if(cc)cc.textContent=(i+1)+' / '+PLAYER.steps.length;
-  const bar=$('#plBar>span'); if(bar)bar.style.width=((i+1)/PLAYER.steps.length*100)+'%';
+  const cc=$('#plCount'); if(cc)cc.textContent='Step '+(i+1)+' of '+PLAYER.steps.length;
+  $$('#plBar .wf-seg').forEach((seg,k)=>{seg.classList.toggle('done',k<i);seg.classList.toggle('active',k===i);});
+  const fr=frames[i];
+  if(fr && GSAP_OK && !prefersReduced()){
+    const scr=fr.querySelector('.wf-screen'); if(scr)gsap.fromTo(scr,{x:20},{x:0,duration:.5,ease:'power2.out',clearProps:'transform'});
+    gsap.fromTo(fr.querySelectorAll('.wf-head, .wf-body > *'),{opacity:0,y:12},{opacity:1,y:0,duration:.45,stagger:.06,ease:'power2.out',delay:.05,clearProps:'transform,opacity'});
+    const cap=fr.querySelector('.cap'); if(cap)gsap.fromTo(cap,{opacity:0,y:10},{opacity:1,y:0,duration:.45,ease:'power2.out',delay:.1,clearProps:'transform,opacity'});
+    const dot=fr.querySelector('.wf-rd.active'); if(dot)gsap.fromTo(dot,{scale:.82},{scale:1,duration:.4,ease:'power2.out'});
+  }
 }
-function playPlayer(){ if(!PLAYER.steps.length)return; const pst=$('#plPoster'); if(pst)pst.classList.add('hide'); const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.pause,18); clearInterval(PLAYER.timer); if(matchMedia('(prefers-reduced-motion: reduce)').matches){PLAYER.timer=null;return;} PLAYER.timer=setInterval(()=>showFrame((PLAYER.i+1)%PLAYER.steps.length),PL_DUR); }
+function playPlayer(){ if(!PLAYER.steps.length)return; const pst=$('#plPoster'); if(pst)pst.classList.add('hide'); const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.pause,18); showFrame(PLAYER.i); clearInterval(PLAYER.timer); if(matchMedia('(prefers-reduced-motion: reduce)').matches){PLAYER.timer=null;return;} PLAYER.timer=setInterval(()=>showFrame((PLAYER.i+1)%PLAYER.steps.length),PL_DUR); }
 function pausePlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.play,18); }
 function stopPlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; }
 function buildPlayer(steps){
   PLAYER.steps=steps; PLAYER.i=0;
   $('#plScreen').innerHTML=steps.map((s,i)=>`<div class="frame" data-fr="${i}">${frameVisual(i)}<div class="cap"><div class="t">${s.title}</div><div class="c">${s.caption}</div></div></div>`).join('')+`<div class="poster" id="plPoster"><div class="pc">${svg(ICON.play,30)}</div></div>`;
+  $('#plBar').innerHTML=steps.map((s,i)=>`<div class="wf-seg" data-seg="${i}" title="${esc(s.title)}"><i></i></div>`).join('');
   showFrame(0);
   $('#plPoster').onclick=playPlayer;
   $('#plPlay').onclick=()=>PLAYER.timer?pausePlayer():playPlayer();
   $('#plPrev').onclick=()=>{pausePlayer();showFrame((PLAYER.i-1+steps.length)%steps.length);};
   $('#plNext').onclick=()=>{pausePlayer();showFrame((PLAYER.i+1)%steps.length);};
-  $('#plBar').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();pausePlayer();showFrame(Math.max(0,Math.min(steps.length-1,Math.floor((e.clientX-r.left)/r.width*steps.length))));};
+  $('#plBar').onclick=e=>{const seg=e.target.closest('.wf-seg');if(seg){pausePlayer();showFrame(+seg.dataset.seg);}};
 }
 function renderHome(){
   const c=HOME.copy, story=HOME.story;
@@ -510,14 +542,14 @@ function renderHome(){
 
     <div class="sec-title"><h2>Guided walkthrough</h2><p>A quick tour of the console</p></div>
     <div class="player">
-      <div class="chrome"><div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div><div class="urlbar" id="plUrl">aurora.health/sign-in</div></div>
+      <div class="chrome"><div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div><div class="urlbar" id="plUrl">aurora.health/</div></div>
       <div class="screen" id="plScreen"></div>
       <div class="controls">
         <button class="pbtn" id="plPlay" aria-label="Play or pause walkthrough">${svg(ICON.play,18)}</button>
         <button class="pbtn" id="plPrev" aria-label="Previous step">${svg('<path d="M15 18l-6-6 6-6"/>',18)}</button>
-        <div class="pbar" id="plBar"><span></span></div>
+        <div class="wf-timeline" id="plBar"></div>
         <button class="pbtn" id="plNext" aria-label="Next step">${svg('<path d="M9 18l6-6-6-6"/>',18)}</button>
-        <span class="pcount" id="plCount">1 / ${story.steps.length}</span>
+        <span class="pcount" id="plCount">Step 1 of ${story.steps.length}</span>
       </div>
     </div>`;
   buildPlayer(story.steps);
