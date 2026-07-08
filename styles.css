@@ -577,6 +577,8 @@ th.sortable.asc .ar,th.sortable.desc .ar{opacity:1;color:var(--teal-deep)}
 .wf-live{display:flex;align-items:center;gap:6px;color:#8098b4;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex:none}
 .wf-live span{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);animation:pulseDot 1.6s ease-in-out infinite}
 @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}
+.wf-result{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;font-weight:600;color:var(--ink-2);background:var(--good-soft);border-radius:9px;padding:.32rem .62rem}
+.wf-result b{color:var(--ink);font-weight:800}
 /* walkthrough responsive */
 @media(max-width:600px){
   .wf-screen{grid-template-columns:44px 1fr}

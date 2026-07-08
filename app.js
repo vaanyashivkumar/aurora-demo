@@ -482,7 +482,7 @@ function frameVisual(i){
     case 3: return wfShell(2,'AI Analysis','New analysis',
       `<div class="wf-thumbs">${Array.from({length:6},(_,k)=>`<div class="wf-thumb">${scanSVG(k+2)}</div>`).join('')}</div>
        <div class="wf-opts">${[['Sienna',0],['NeuroXAI',0],['Inception',0],['End-to-End CNN',1],['Model 1 CNN',1]].map(m=>`<div class="wf-opt ${m[1]?'hot':''}"><span>${m[0]}</span>${m[1]?'<span class="wf-badge">NEW</span>':''}</div>`).join('')}</div>
-       <div style="display:flex;justify-content:flex-end;margin-top:auto"><span class="wf-cta" style="padding:.42rem .85rem;font-size:.78rem">${svg(ICON.play,13)} Run prediction</span></div>`);
+       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto"><div class="wf-result" style="opacity:0"><span class="wf-sw" style="background:${COLORS[0]}"></span>GBM · <b>85%</b> confidence</div><span class="wf-cta" style="padding:.42rem .85rem;font-size:.78rem">${svg(ICON.play,13)} Run prediction</span></div>`);
     case 4: return wfShell(3,'Model Consensus','Consensus',
       `<div class="wf-split" style="grid-template-columns:1fr 1fr">${[['Sienna',[.7,.2,.1]],['End-to-End CNN',[.66,.24,.1]]].map(m=>`<div class="wf-donut"><div class="wf-name" style="margin-bottom:4px">${m[0]}</div>${donut(m[1],['GBM','MET','NON'],94)}</div>`).join('')}</div><div class="wf-chip hot" style="margin-top:10px">${svg('<path d="M20 6 9 17l-5-5"/>',12)}&nbsp;Models agree · GBM</div>`);
     case 5: return wfShell(4,'Final Output','Reports',
@@ -503,7 +503,8 @@ function wfToast(msg){ const el=$('#plToast'); if(!el)return; el.innerHTML=`<spa
 /* steps that show a brief processing state before the result toast */
 const STEP_PROCESS={3:{proc:'Analysing 6 slices…',done:'Prediction complete · GBM 85%'},6:{proc:'Generating report…',done:'Report exported (PDF)'}};
 function wfProcess(msg,cb){ const el=$('#plProc'); if(!el){cb&&cb();return;} const m=$('#plProcMsg'); if(m)m.textContent=msg; if(!GSAP_OK||prefersReduced()){cb&&cb();return;} gsap.killTweensOf(el); gsap.fromTo(el,{opacity:0,scale:.96},{opacity:1,scale:1,duration:.3,ease:'power2.out'}); gsap.to(el,{opacity:0,scale:.97,duration:.35,delay:1.05,ease:'power2.in',onComplete:()=>{cb&&cb();}}); }
-function stepFeedback(i){ const p=STEP_PROCESS[i]; if(p){wfProcess(p.proc,()=>wfToast(p.done));} else if(STEP_TOAST[i]){wfToast(STEP_TOAST[i]);} }
+function revealResult(i){ if(i!==3)return; const r=document.querySelector('#plScreen .frame[data-fr="3"] .wf-result'); if(!r)return; if(GSAP_OK&&!prefersReduced())gsap.fromTo(r,{opacity:0,x:-8},{opacity:1,x:0,duration:.4,ease:'power2.out'}); else r.style.opacity='1'; }
+function stepFeedback(i){ const p=STEP_PROCESS[i]; if(p){wfProcess(p.proc,()=>{wfToast(p.done);revealResult(i);});} else if(STEP_TOAST[i]){wfToast(STEP_TOAST[i]);} }
 function cursorTour(fr){
   if(!GSAP_OK||prefersReduced())return;
   const scr=$('#plScreen'),cur=$('#plCursor'); if(!scr||!cur)return;
@@ -520,6 +521,7 @@ function cursorTour(fr){
     tl.add(()=>{const p=pos(el);gsap.fromTo(cur,{scale:1},{scale:.86,duration:.1,yoyo:true,repeat:1,ease:'power1.inOut'});ripple(p.x,p.y);press(el);reactClick(el);if(isLast)stepFeedback(PLAYER.i);});
   });
 }
+function resetFrameState(fr){ fr.querySelectorAll('.picked').forEach(el=>el.classList.remove('picked')); fr.querySelectorAll('.wf-result').forEach(el=>{el.style.opacity='0';}); }
 function showFrame(i){
   PLAYER.i=i;
   const frames=$$('#plScreen .frame');
@@ -537,10 +539,13 @@ function showFrame(i){
     else fill.style.width='100%';
   });
   const fr=frames[i];
+  if(fr)resetFrameState(fr);
   if(fr && GSAP_OK && !prefersReduced()){
-    gsap.fromTo(fr.querySelectorAll('.wf-head, .wf-body > *'),{opacity:0,y:12},{opacity:1,y:0,duration:.45,stagger:.06,ease:'power2.out',delay:.05,clearProps:'transform,opacity'});
-    const cap=fr.querySelector('.cap'); if(cap)gsap.fromTo(cap,{opacity:0,y:10},{opacity:1,y:0,duration:.45,ease:'power2.out',delay:.1,clearProps:'transform,opacity'});
-    const dot=fr.querySelector('.wf-rd.active'); if(dot)gsap.fromTo(dot,{scale:.82},{scale:1,duration:.4,ease:'power2.out'});
+    const scr=fr.querySelector('.wf-screen');
+    if(scr)gsap.fromTo(scr,{opacity:0,scale:1.04},{opacity:1,scale:1,duration:.5,ease:'power2.out',transformOrigin:'50% 45%',clearProps:'opacity,transform'}); // subtle zoom + fade
+    gsap.fromTo(fr.querySelectorAll('.wf-head, .wf-body > *'),{y:12},{y:0,duration:.45,stagger:.05,ease:'power2.out',delay:.08,clearProps:'transform'}); // slide
+    const cap=fr.querySelector('.cap'); if(cap)gsap.fromTo(cap,{opacity:0,y:10},{opacity:1,y:0,duration:.45,ease:'power2.out',delay:.12,clearProps:'transform,opacity'});
+    const dot=fr.querySelector('.wf-rd.active'); if(dot)gsap.fromTo(dot,{scale:.82},{scale:1,duration:.4,ease:'power2.out',delay:.1});
   }
   if(fr && $('#plPoster')&&$('#plPoster').classList.contains('hide')) cursorTour(fr);
 }
