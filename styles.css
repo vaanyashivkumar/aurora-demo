@@ -571,6 +571,12 @@ th.sortable.asc .ar,th.sortable.desc .ar{opacity:1;color:var(--teal-deep)}
 @keyframes wfClick{0%{box-shadow:0 0 0 0 rgba(45,212,196,.5)}45%{box-shadow:0 0 0 5px rgba(45,212,196,.26)}100%{box-shadow:0 0 0 0 rgba(45,212,196,0)}}
 .poster-in{display:flex;flex-direction:column;align-items:center;gap:12px}
 .poster-lbl{color:#fff;font-size:.82rem;font-weight:600;text-shadow:0 1px 5px rgba(0,0,0,.6)}
+/* in-screen processing state + live indicator */
+.wf-proc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:.7rem 1rem;display:flex;align-items:center;gap:10px;font-size:.82rem;font-weight:600;color:var(--ink);opacity:0;pointer-events:none;white-space:nowrap}
+.wf-proc-sp{width:16px;height:16px;border-radius:50%;border:2.5px solid var(--teal-soft);border-top-color:var(--teal);animation:sp .7s linear infinite;flex:none}
+.wf-live{display:flex;align-items:center;gap:6px;color:#8098b4;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex:none}
+.wf-live span{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal);animation:pulseDot 1.6s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.35}}
 /* walkthrough responsive */
 @media(max-width:600px){
   .wf-screen{grid-template-columns:44px 1fr}
