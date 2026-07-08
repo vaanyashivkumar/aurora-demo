@@ -461,7 +461,7 @@ const HOME = {
 };
 
 let PLAYER={i:0,timer:null,steps:[]};
-const PL_DUR=4200;
+const PL_DUR=4600;
 function wfRail(active){
   const items=[ICON.home,ICON.dashboard,ICON.scan,ICON.compare,ICON.reports];
   return `<div class="wf-rail"><div class="wf-brand">${svg(ICON.brain,15)}</div>${items.map((ic,k)=>`<div class="wf-rd ${k===active?'active':''}">${svg(ic,15)}</div>`).join('')}</div>`;
@@ -493,13 +493,24 @@ function frameVisual(i){
 }
 function revealPlayer(){ const p=$('#plPoster'); if(p)p.classList.add('hide'); const c=$('#plCursor'); if(c&&GSAP_OK)gsap.to(c,{opacity:1,duration:.3}); }
 function typeUrl(text){ const u=$('#plUrl'); if(!u)return; if(!GSAP_OK||prefersReduced()){u.textContent=text;return;} clearInterval(u._t); let n=0; u.textContent=''; u._t=setInterval(()=>{ n++; u.textContent=text.slice(0,n)+(n<text.length?'▏':''); if(n>=text.length){clearInterval(u._t);u.textContent=text;} },20); }
-function moveCursor(fr){
+/* per-step in-screen elements the cursor clicks (after navigating via the sidebar) */
+const CURSOR_TARGETS={0:['.wf-cta'],1:['.wf-card .wf-row'],2:['.wf-chip.hot'],3:['.wf-opt.hot','.wf-cta'],4:['.wf-chip.hot'],5:['.wf-chip'],6:['.wf-action']};
+function ripple(x,y){const r=$('#plClick');if(r){gsap.set(r,{x,y,scale:.3,opacity:.85});gsap.to(r,{scale:1.5,opacity:0,duration:.5,ease:'power2.out'});}}
+function press(el){if(el)gsap.fromTo(el,{scale:1},{scale:.95,duration:.12,ease:'power1.inOut',yoyo:true,repeat:1,transformOrigin:'50% 50%'});}
+function cursorTour(fr){
   if(!GSAP_OK||prefersReduced())return;
-  const dot=fr.querySelector('.wf-rd.active'),scr=$('#plScreen'),cur=$('#plCursor'),rip=$('#plClick');
-  if(!dot||!scr||!cur)return;
-  const sr=scr.getBoundingClientRect(),dr=dot.getBoundingClientRect();
-  const x=dr.left-sr.left+dr.width/2, y=dr.top-sr.top+dr.height/2;
-  gsap.to(cur,{x:x-5,y:y-3,opacity:1,duration:.55,ease:'power2.inOut',onComplete:()=>{ if(rip){gsap.set(rip,{x,y,scale:.3,opacity:.85});gsap.to(rip,{scale:1.4,opacity:0,duration:.5,ease:'power2.out'});} }});
+  const scr=$('#plScreen'),cur=$('#plCursor'); if(!scr||!cur)return;
+  if(PLAYER.tour)PLAYER.tour.kill();
+  const seq=[];
+  const dot=fr.querySelector('.wf-rd.active'); if(dot)seq.push(dot);                 // 1) navigate via sidebar
+  (CURSOR_TARGETS[PLAYER.i]||[]).forEach(sel=>{const el=fr.querySelector(sel); if(el)seq.push(el);}); // 2) click in-screen controls
+  if(!seq.length)return;
+  const pos=el=>{const sr=$('#plScreen').getBoundingClientRect(),r=el.getBoundingClientRect();return {x:r.left-sr.left+r.width/2,y:r.top-sr.top+Math.min(r.height/2,18)};};
+  const tl=gsap.timeline({delay:.4}); PLAYER.tour=tl;
+  seq.forEach((el,idx)=>{
+    tl.to(cur,{x:()=>pos(el).x-5,y:()=>pos(el).y-3,opacity:1,duration:idx===0?.5:.55,ease:'power2.inOut'}, idx===0?0:'+=0.14');
+    tl.add(()=>{const p=pos(el);gsap.fromTo(cur,{scale:1},{scale:.86,duration:.1,yoyo:true,repeat:1,ease:'power1.inOut'});ripple(p.x,p.y);press(el);});
+  });
 }
 function showFrame(i){
   PLAYER.i=i;
@@ -523,11 +534,11 @@ function showFrame(i){
     const cap=fr.querySelector('.cap'); if(cap)gsap.fromTo(cap,{opacity:0,y:10},{opacity:1,y:0,duration:.45,ease:'power2.out',delay:.1,clearProps:'transform,opacity'});
     const dot=fr.querySelector('.wf-rd.active'); if(dot)gsap.fromTo(dot,{scale:.82},{scale:1,duration:.4,ease:'power2.out'});
   }
-  if(fr && $('#plPoster')&&$('#plPoster').classList.contains('hide')) moveCursor(fr);
+  if(fr && $('#plPoster')&&$('#plPoster').classList.contains('hide')) cursorTour(fr);
 }
 function playPlayer(){ if(!PLAYER.steps.length)return; revealPlayer(); PLAYER.playing=true; const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.pause,18); showFrame(PLAYER.i); clearInterval(PLAYER.timer); if(prefersReduced()){PLAYER.timer=null;PLAYER.playing=false;return;} PLAYER.timer=setInterval(()=>showFrame((PLAYER.i+1)%PLAYER.steps.length),PL_DUR); }
-function pausePlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; PLAYER.playing=false; const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.play,18); }
-function stopPlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; PLAYER.playing=false; }
+function pausePlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; PLAYER.playing=false; if(PLAYER.tour)PLAYER.tour.kill(); const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.play,18); }
+function stopPlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; PLAYER.playing=false; if(PLAYER.tour)PLAYER.tour.kill(); }
 function buildPlayer(steps){
   PLAYER.steps=steps; PLAYER.i=0; PLAYER.playing=false;
   $('#plScreen').innerHTML=steps.map((s,i)=>`<div class="frame" data-fr="${i}">${frameVisual(i)}<div class="cap"><div class="t">${s.title}</div><div class="c">${s.caption}</div></div></div>`).join('')
