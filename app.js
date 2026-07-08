@@ -63,12 +63,14 @@ const ICON = {
   file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   book:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
   play:'<path d="M5 3l14 9-14 9V3z"/>', plus:'<path d="M12 5v14M5 12h14"/>',
+  pause:'<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+  home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/>',
   brain:'<path d="M3 13c3-6 6-9 9-9s6 3 9 9"/><path d="M3 13c3 6 6 9 9 9"/>',
   warn:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
   activity:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
 };
-const NAV=[{r:'dashboard',l:'Dashboard',i:ICON.dashboard},{r:'patients',l:'Patients',i:ICON.patients},{r:'add-patient',l:'New analysis',i:ICON.scan},{r:'compare',l:'Compare',i:ICON.compare},{r:'reports',l:'Reports',i:ICON.reports},{r:'documentation',l:'Docs',i:ICON.docs}];
-const CRUMB={dashboard:'Dashboard',patients:'Patients','add-patient':'New analysis','image-selection':'New analysis · Scan selection',results:'Prediction analysis',compare:'Model comparison',reports:'Reports',documentation:'Documentation',settings:'Settings',audit:'Audit log',about:'About this build'};
+const NAV=[{r:'home',l:'Home',i:ICON.home},{r:'dashboard',l:'Dashboard',i:ICON.dashboard},{r:'patients',l:'Patients',i:ICON.patients},{r:'add-patient',l:'New analysis',i:ICON.scan},{r:'compare',l:'Compare',i:ICON.compare},{r:'reports',l:'Reports',i:ICON.reports},{r:'documentation',l:'Docs',i:ICON.docs}];
+const CRUMB={home:'Home',dashboard:'Dashboard',patients:'Patients','add-patient':'New analysis','image-selection':'New analysis · Scan selection',results:'Prediction analysis',compare:'Model comparison',reports:'Reports',documentation:'Documentation',settings:'Settings',audit:'Audit log',about:'About this build'};
 
 /* ---- synthetic MRI scan ---- */
 function scanSVG(seed=0){
@@ -105,13 +107,13 @@ function legend(classes){return `<div class="legend">${classes.map((c,i)=>`<span
 /* ---- routing ---- */
 let route='dashboard';
 function go(r,arg){
-  route=r; closeNotif();
+  route=r; closeNotif(); stopPlayer();
   $$('.view').forEach(v=>v.classList.remove('active'));
   const v=$('#view-'+r); if(v)v.classList.add('active');
   $$('.rail-link[data-route]').forEach(l=>{const on=l.dataset.route===r;l.classList.toggle('active',on);l.setAttribute('aria-current',on?'page':'false');});
   $('#crumb').innerHTML=`<b>${CRUMB[r]||r}</b>`;
   window.scrollTo({top:0});
-  ({dashboard:renderDashboard,patients:renderPatients,'add-patient':renderAddPatient,'image-selection':renderImageSelection,results:()=>renderResults(arg),compare:renderCompare,reports:renderReports,documentation:renderDocs,settings:renderSettings,audit:renderAudit,about:renderAbout}[r]||(()=>{}))();
+  ({home:renderHome,dashboard:renderDashboard,patients:renderPatients,'add-patient':renderAddPatient,'image-selection':renderImageSelection,results:()=>renderResults(arg),compare:renderCompare,reports:renderReports,documentation:renderDocs,settings:renderSettings,audit:renderAudit,about:renderAbout}[r]||(()=>{}))();
 }
 function buildRail(){$('#railLinks').innerHTML=NAV.map(n=>`<button class="rail-link" data-route="${n.r}" title="${n.l}" aria-label="${n.l}">${svg(n.i,21)}<span class="tip">${n.l}</span></button>`).join('');}
 function fillUser(){const c=D.clinician;$('#userName').textContent=c.name;$('#userRole').textContent=c.role;$('#userAv').textContent=c.initials;$('#railAva').textContent=c.initials;$('#dashFirst').textContent='Dr. '+(c.name.split(' ').slice(-1)[0]);}
@@ -342,7 +344,7 @@ function markCmd(){$$('#cmdkList .cmdk-item[data-i]').forEach(el=>el.classList.t
 function runCmd(i){const c=cmdItems[i];if(c){closeCmd();c.run();}}
 
 /* ---- onboarding tour ---- */
-const TOUR=[{sel:'.rail-link[data-route="dashboard"]',t:'Navigation',x:'Jump between Dashboard, Patients, New analysis, Compare and Reports here.'},{sel:'#globalSearch',t:'Search & command palette',x:'Search anything, or press Ctrl+K for the command palette.'},{sel:'.rail-link[data-route="add-patient"]',t:'New analysis',x:'Upload MRI scans, pick a model (incl. the two new ones) and run a prediction.'},{sel:'#dashKpis .kpi',t:'At a glance',x:'Key metrics update as you work. Low-confidence cases get flagged automatically.'},{sel:'#notifBtn',t:'Alerts & notifications',x:'Review flagged cases and recent activity anytime.'}];
+const TOUR=[{sel:'.rail-link[data-route="home"]',t:'Home',x:'The home page introduces Aurora and all five models, with a guided walkthrough video.'},{sel:'.rail-link[data-route="dashboard"]',t:'Dashboard',x:'Your day at a glance: patients, recent analyses and low-confidence alerts.'},{sel:'#globalSearch',t:'Search & command palette',x:'Search anything, or press Ctrl+K for the command palette.'},{sel:'.rail-link[data-route="add-patient"]',t:'New analysis',x:'Upload MRI scans, pick a model (incl. the two new ones) and run a prediction.'},{sel:'#notifBtn',t:'Alerts & notifications',x:'Review flagged cases and recent activity anytime.'}];
 let tourI=0;
 function startTour(){tourI=0;$('#tourScrim').classList.add('open');showTourStep();}
 function endTour(){$('#tourScrim').classList.remove('open');$('#tourScrim').innerHTML='';try{localStorage.setItem(LS.tour,'1');}catch(e){}}
@@ -362,10 +364,102 @@ function renderSearchPop(q){const pop=$('#searchPop');if(!q){pop.classList.remov
 
 function delPatient(p){modal(`<div class="modal-h"><h3 style="font-size:1.05rem">Delete patient?</h3><p class="muted" style="font-size:.85rem;margin:4px 0 0">This removes ${esc(p.name)} and their study from your workspace.</p></div><div class="modal-f"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" id="delYes">Delete</button></div>`);$('#delYes').onclick=()=>{D.patients=D.patients.filter(x=>x.id!==p.id);savePatients();logAudit('Deleted patient',p.name);closeModal();toast('Patient deleted');if(route==='patients')renderPatients();else go('patients');};}
 
+/* ===================== HOME / LANDING ===================== */
+const HOME = {
+  copy: {
+    hero:{tagline:"Clinical AI for brain MRI",headline:"Detect and classify brain tumours across an MRI series, one slice at a time.",sub:"Aurora is a clinical web console that runs a patient's MRI scan series through explainable AI models, scoring each slice for tumour type. It surfaces per-slice results, aggregate confidence, and heatmaps in a single report-ready view for the reviewing physician."},
+    whatItDoes:[{title:"Upload",text:"Sign in, add a patient, and upload their MRI scan series in a few clicks."},{title:"Analyse",text:"Choose an AI model and its category set; Aurora scores every slice and aggregates the series."},{title:"Explain",text:"Read per-slice bars, an aggregate donut, and Grad-CAM heatmaps where available, with automatic alerts on low-confidence slices."},{title:"Report",text:"Generate a PDF report, record feedback, or compare two models side by side."}],
+    models:[
+      {name:"Sienna",isNew:false,categories:"Non-Tumor, MET, GBM · Pituitary, Meningioma, Glioma",heatmap:true,blurb:"A versatile multi-class classifier spanning two category sets, with Grad-CAM heatmaps for slice-level explainability. Best when you need broad tumour-type coverage from a single model."},
+      {name:"NeuroXAI",isNew:false,categories:"Non-Tumor, MET, GBM",heatmap:true,blurb:"A ResNet-based classifier built for explainability, pairing tumour scoring with Grad-CAM heatmaps. Best when interpretability of each prediction is the priority."},
+      {name:"Inception",isNew:false,categories:"Non-Tumor, MET, GBM",heatmap:true,blurb:"An InceptionV3-based classifier for Non-Tumor, MET, and GBM, with Grad-CAM heatmaps. A strong general-purpose second opinion on the same three classes."},
+      {name:"End-to-End CNN",isNew:true,categories:"GBM, MET, Non-Tumor",heatmap:false,blurb:"A fast PyTorch model that classifies each slice across GBM, MET, and Non-Tumor in a single end-to-end pass. Best for quick three-class triage; no heatmap."},
+      {name:"Model 1 CNN",isNew:true,categories:"Tumour, Non-Tumor",heatmap:false,blurb:"A lightweight PyTorch model for rapid tumour-versus-no-tumour screening. Best as a first-pass filter across a scan series; no heatmap."}
+    ]
+  },
+  story:{steps:[
+    {title:"Secure sign-in",caption:"A clinician authenticates to enter the encrypted clinical console.",url:"/sign-in"},
+    {title:"Dashboard overview",caption:"The dashboard shows the patient roster, recent scan activity, low-confidence auto-alerts and quick actions.",url:"/dashboard"},
+    {title:"Add patient & upload MRI",caption:"A new patient record is created and their MRI scan series is uploaded, ready for analysis.",url:"/patients/new"},
+    {title:"Choose an AI model",caption:"Pick from five models — including the two new ones, End-to-End CNN (GBM/MET/NON) and Model 1 CNN (TUM/NON).",url:"/image-selection"},
+    {title:"Prediction results",caption:"The model scores every slice: per-slice probability bars, an aggregate donut and an overall confidence score.",url:"/prediction"},
+    {title:"Scan viewer & heatmap",caption:"Inspect each slice and toggle the Grad-CAM heatmap — available for Sienna, NeuroXAI and Inception.",url:"/prediction/viewer"},
+    {title:"Compare two models",caption:"Run two models side by side on the same series to check whether they agree before reporting.",url:"/compare"}
+  ]}
+};
+
+let PLAYER={i:0,timer:null,steps:[]};
+const PL_DUR=4200;
+function frameVisual(i){
+  if(i===0)return `<div style="display:grid;place-items:center;height:100%"><div class="mini-card" style="width:250px;text-align:center"><div style="width:40px;height:40px;border-radius:12px;margin:0 auto 10px;background:linear-gradient(145deg,var(--teal),var(--violet));display:grid;place-items:center;color:#fff">${svg(ICON.brain,22)}</div><b>Aurora AI</b><div class="muted" style="font-size:.76rem;margin-bottom:12px">Clinical Console</div><div class="mini-sel" style="margin-bottom:8px;color:var(--muted)">dr.reyes@aurora.health</div><div class="mini-sel" style="margin-bottom:12px;color:var(--muted)">••••••••</div><div class="btn primary" style="justify-content:center">Sign in</div></div></div>`;
+  if(i===1)return `<div class="mini-kpis" style="margin-bottom:10px">${[['Patients','16'],['Analyses','9'],['Avg conf.','73%']].map(k=>`<div class="mini-kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div></div>`).join('')}</div><div class="mini-card"><b style="font-size:.8rem">Recent studies</b>${[['Marcus Delgado','MD',0,[0.8,0.15,0.05]],['Priya Nair','PN',3,[0.4,0.5,0.1]],['Kwame Osei','KO',6,[0.1,0.85,0.05]]].map(r=>`<div class="mini-row"><span class="pt-ava" style="width:26px;height:26px;background:${AV_COLORS[r[2]%AV_COLORS.length]}">${r[1]}</span><div style="flex:1;font-size:.8rem;font-weight:600">${r[0]}</div><div style="width:88px">${miniBar(r[3])}</div></div>`).join('')}</div>`;
+  if(i===2)return `<div class="mini-card"><b style="font-size:.8rem">Upload MRI scans</b><div class="drop" style="padding:16px;margin:8px 0">${svg('<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',20)}<div style="font-size:.76rem;margin-top:4px">Drop DICOM / PNG scans</div></div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">${Array.from({length:6},(_,k)=>`<div style="aspect-ratio:1;border-radius:7px;overflow:hidden;border:1px solid var(--line)">${scanSVG(k+2)}</div>`).join('')}</div></div>`;
+  if(i===3)return `<div class="mini-card"><b style="font-size:.8rem">Choose a model</b><div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${[['Sienna',0],['NeuroXAI',0],['Inception',0],['End-to-End CNN',1],['Model 1 CNN',1]].map(m=>`<div class="mini-opt ${m[1]?'hot':''}"><span>${m[0]}</span>${m[1]?'<span class="chip new" style="padding:.05rem .4rem">NEW</span>':''}</div>`).join('')}</div></div>`;
+  if(i===4)return `<div style="display:grid;grid-template-columns:1.25fr 1fr;gap:12px"><div class="mini-card"><b style="font-size:.78rem">Scan predictions</b>${[[0.82,0.12,0.06],[0.15,0.75,0.1],[0.3,0.25,0.45]].map(v=>`<div style="margin:8px 0">${stackBar(v)}</div>`).join('')}</div><div class="mini-card" style="display:grid;place-items:center">${donut([0.6,0.28,0.12],['GBM','MET','NON'],118)}</div></div>`;
+  if(i===5)return `<div class="mini-card"><div class="between" style="margin-bottom:8px"><b style="font-size:.78rem">Scan viewer</b><span class="chip good">Heatmap: on</span></div><div class="viewer" style="height:150px;aspect-ratio:auto">${scanVisual(null,2,{heat:true,hc:'#ff5a3c'})}<div class="scanline"></div></div></div>`;
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="mini-card" style="text-align:center"><b style="font-size:.76rem">Sienna</b>${donut([0.7,0.2,0.1],['GBM','MET','NON'],104)}</div><div class="mini-card" style="text-align:center"><b style="font-size:.76rem">End-to-End CNN</b>${donut([0.66,0.24,0.1],['GBM','MET','NON'],104)}</div></div>`;
+}
+function showFrame(i){
+  PLAYER.i=i;
+  $$('#plScreen .frame').forEach(f=>f.classList.toggle('on',+f.dataset.fr===i));
+  const s=PLAYER.steps[i]; const u=$('#plUrl'); if(u)u.textContent='aurora.health'+(s.url||'');
+  const cc=$('#plCount'); if(cc)cc.textContent=(i+1)+' / '+PLAYER.steps.length;
+  const bar=$('#plBar>span'); if(bar)bar.style.width=((i+1)/PLAYER.steps.length*100)+'%';
+}
+function playPlayer(){ if(!PLAYER.steps.length)return; const pst=$('#plPoster'); if(pst)pst.classList.add('hide'); const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.pause,18); clearInterval(PLAYER.timer); if(matchMedia('(prefers-reduced-motion: reduce)').matches){PLAYER.timer=null;return;} PLAYER.timer=setInterval(()=>showFrame((PLAYER.i+1)%PLAYER.steps.length),PL_DUR); }
+function pausePlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.play,18); }
+function stopPlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; }
+function buildPlayer(steps){
+  PLAYER.steps=steps; PLAYER.i=0;
+  $('#plScreen').innerHTML=steps.map((s,i)=>`<div class="frame" data-fr="${i}">${frameVisual(i)}<div class="cap"><div class="t">${s.title}</div><div class="c">${s.caption}</div></div></div>`).join('')+`<div class="poster" id="plPoster"><div class="pc">${svg(ICON.play,30)}</div></div>`;
+  showFrame(0);
+  $('#plPoster').onclick=playPlayer;
+  $('#plPlay').onclick=()=>PLAYER.timer?pausePlayer():playPlayer();
+  $('#plPrev').onclick=()=>{pausePlayer();showFrame((PLAYER.i-1+steps.length)%steps.length);};
+  $('#plNext').onclick=()=>{pausePlayer();showFrame((PLAYER.i+1)%steps.length);};
+  $('#plBar').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();pausePlayer();showFrame(Math.max(0,Math.min(steps.length-1,Math.floor((e.clientX-r.left)/r.width*steps.length))));};
+}
+function renderHome(){
+  const c=HOME.copy, story=HOME.story;
+  $('#view-home').innerHTML=`
+    <div class="home-hero"><div class="z">
+      <p class="eyebrow">${esc(c.hero.tagline)}</p>
+      <h1>${esc(c.hero.headline)}</h1>
+      <p>${esc(c.hero.sub)}</p>
+      <div class="cta">
+        <button class="btn onhero" data-route="add-patient">${svg(ICON.plus,16)} Start an analysis</button>
+        <button class="btn ghosthero" id="watchBtn">${svg(ICON.play,16)} Watch walkthrough</button>
+        <button class="btn ghosthero" data-route="dashboard">Go to dashboard →</button>
+      </div>
+      <div class="hstats">${[['5','AI models'],['2','new this release'],['16','demo patients']].map(s=>`<div class="s"><b class="tnum">${s[0]}</b><span>${s[1]}</span></div>`).join('')}</div>
+    </div></div>
+
+    <div class="sec-title"><h2>What Aurora does</h2></div>
+    <div class="cap-grid">${c.whatItDoes.map((w,i)=>`<div class="cap"><div class="ic">${svg([ICON.scan,ICON.brain,ICON.eye,ICON.file][i]||ICON.dashboard,20)}</div><h4>${esc(w.title)}</h4><p>${esc(w.text)}</p></div>`).join('')}</div>
+
+    <div class="sec-title"><h2>The models</h2><p>Five models — two new this release</p></div>
+    <div class="models-grid">${c.models.map(m=>`<div class="mcard ${m.isNew?'new':''}"><div class="mh"><div class="mi">${svg(ICON.brain,20)}</div><h3>${esc(m.name)}</h3>${m.isNew?'<span class="chip new">NEW</span>':'<span class="chip">Original</span>'}</div><div class="mtags"><span class="chip">${esc(m.categories)}</span><span class="chip ${m.heatmap?'good':''}">${m.heatmap?'Grad-CAM heatmap':'No heatmap'}</span></div><p>${esc(m.blurb)}</p></div>`).join('')}</div>
+
+    <div class="sec-title"><h2>Guided walkthrough</h2><p>A quick tour of the console</p></div>
+    <div class="player">
+      <div class="chrome"><div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div><div class="urlbar" id="plUrl">aurora.health/sign-in</div></div>
+      <div class="screen" id="plScreen"></div>
+      <div class="controls">
+        <button class="pbtn" id="plPlay" aria-label="Play or pause walkthrough">${svg(ICON.play,18)}</button>
+        <button class="pbtn" id="plPrev" aria-label="Previous step">${svg('<path d="M15 18l-6-6 6-6"/>',18)}</button>
+        <div class="pbar" id="plBar"><span></span></div>
+        <button class="pbtn" id="plNext" aria-label="Next step">${svg('<path d="M9 18l6-6-6-6"/>',18)}</button>
+        <span class="pcount" id="plCount">1 / ${story.steps.length}</span>
+      </div>
+    </div>`;
+  buildPlayer(story.steps);
+  $('#watchBtn').onclick=()=>{document.querySelector('.player').scrollIntoView({behavior:'smooth',block:'center'});playPlayer();};
+}
+
 /* ---- auth + init ---- */
 function login(){
   $('#authScreen').style.display='none';$('#appShell').hidden=false;
-  try{ buildRail(); fillUser(); go('dashboard'); logAudit('Signed in',''); }
+  try{ buildRail(); fillUser(); go('home'); logAudit('Signed in',''); }
   catch(err){ console.error('dashboard render failed',err); const c=document.querySelector('.content'); if(c)c.innerHTML='<div class="card pad" style="margin:24px;max-width:480px">Something went wrong loading the dashboard. Please <a href="?r='+Date.now()+'">reload</a>.</div>'; }
   try{if(!localStorage.getItem(LS.tour))setTimeout(startTour,700);}catch(e){}
 }
