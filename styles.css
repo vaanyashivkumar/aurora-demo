@@ -482,7 +482,7 @@ th.sortable.asc .ar,th.sortable.desc .ar{opacity:1;color:var(--teal-deep)}
 .mcard p{margin:0;font-size:.86rem;color:var(--muted)}
 
 /* ---- walkthrough "video" player ---- */
-.player{max-width:920px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 40px 84px -40px rgba(16,32,56,.55),0 4px 16px -8px rgba(16,32,56,.12);background:var(--surface)}
+.player{max-width:920px;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 40px 84px -40px rgba(16,32,56,.55),0 4px 16px -8px rgba(16,32,56,.12),0 0 70px -18px rgba(45,212,196,.16);background:var(--surface)}
 .player .chrome{display:flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(180deg,#0e1a2e,#0b1524);border-bottom:1px solid #1e2b40}
 .player .dots{display:flex;gap:6px}.player .dots i{width:11px;height:11px;border-radius:50%;display:block}
 .player .urlbar{flex:1;background:rgba(255,255,255,.08);border-radius:8px;padding:.32rem .7rem;color:#9fb2c9;font-size:.76rem;font-family:var(--mono);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -563,6 +563,14 @@ th.sortable.asc .ar,th.sortable.desc .ar{opacity:1;color:var(--teal-deep)}
 /* animated demo cursor + click ripple */
 .wf-cursor{position:absolute;top:0;left:0;z-index:5;pointer-events:none;opacity:0;filter:drop-shadow(0 2px 5px rgba(0,0,0,.45))}
 .wf-click{position:absolute;top:0;left:0;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:2px solid var(--teal);z-index:5;pointer-events:none;opacity:0}
+/* reactive click states + in-app toast */
+.wf-toast{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:.78rem;font-weight:600;padding:.45rem .8rem;border-radius:9px;box-shadow:0 14px 34px -12px rgba(0,0,0,.6);z-index:4;opacity:0;display:flex;align-items:center;gap:7px;white-space:nowrap;pointer-events:none}
+.wf-toast .d{width:7px;height:7px;border-radius:50%;background:var(--teal);flex:none;box-shadow:0 0 8px var(--teal)}
+.wf-opt.picked{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal-soft)}
+.wf-clicked{animation:wfClick .6s ease}
+@keyframes wfClick{0%{box-shadow:0 0 0 0 rgba(45,212,196,.5)}45%{box-shadow:0 0 0 5px rgba(45,212,196,.26)}100%{box-shadow:0 0 0 0 rgba(45,212,196,0)}}
+.poster-in{display:flex;flex-direction:column;align-items:center;gap:12px}
+.poster-lbl{color:#fff;font-size:.82rem;font-weight:600;text-shadow:0 1px 5px rgba(0,0,0,.6)}
 /* walkthrough responsive */
 @media(max-width:600px){
   .wf-screen{grid-template-columns:44px 1fr}

@@ -497,6 +497,9 @@ function typeUrl(text){ const u=$('#plUrl'); if(!u)return; if(!GSAP_OK||prefersR
 const CURSOR_TARGETS={0:['.wf-cta'],1:['.wf-card .wf-row'],2:['.wf-chip.hot'],3:['.wf-opt.hot','.wf-cta'],4:['.wf-chip.hot'],5:['.wf-chip'],6:['.wf-action']};
 function ripple(x,y){const r=$('#plClick');if(r){gsap.set(r,{x,y,scale:.3,opacity:.85});gsap.to(r,{scale:1.5,opacity:0,duration:.5,ease:'power2.out'});}}
 function press(el){if(el)gsap.fromTo(el,{scale:1},{scale:.95,duration:.12,ease:'power1.inOut',yoyo:true,repeat:1,transformOrigin:'50% 50%'});}
+const STEP_TOAST={0:'New analysis started',1:'Opening patient · Marcus Delgado',2:'Flagged for MDT review',3:'Prediction complete · GBM 85%',4:'Consensus reached · GBM',5:'Referral drafted',6:'Report exported (PDF)'};
+function reactClick(el){ if(!el)return; el.classList.add('wf-clicked'); setTimeout(()=>el.classList.remove('wf-clicked'),650); if(el.classList.contains('wf-opt'))el.classList.add('picked'); }
+function wfToast(msg){ const el=$('#plToast'); if(!el)return; el.innerHTML=`<span class="d"></span>${esc(msg)}`; if(!GSAP_OK||prefersReduced()){el.style.opacity='1';return;} gsap.killTweensOf(el); gsap.fromTo(el,{opacity:0,y:10},{opacity:1,y:0,duration:.35,ease:'power2.out'}); gsap.to(el,{opacity:0,y:8,duration:.4,delay:1.9,ease:'power2.in'}); }
 function cursorTour(fr){
   if(!GSAP_OK||prefersReduced())return;
   const scr=$('#plScreen'),cur=$('#plCursor'); if(!scr||!cur)return;
@@ -508,8 +511,9 @@ function cursorTour(fr){
   const pos=el=>{const sr=$('#plScreen').getBoundingClientRect(),r=el.getBoundingClientRect();return {x:r.left-sr.left+r.width/2,y:r.top-sr.top+Math.min(r.height/2,18)};};
   const tl=gsap.timeline({delay:.4}); PLAYER.tour=tl;
   seq.forEach((el,idx)=>{
+    const isLast=idx===seq.length-1;
     tl.to(cur,{x:()=>pos(el).x-5,y:()=>pos(el).y-3,opacity:1,duration:idx===0?.5:.55,ease:'power2.inOut'}, idx===0?0:'+=0.14');
-    tl.add(()=>{const p=pos(el);gsap.fromTo(cur,{scale:1},{scale:.86,duration:.1,yoyo:true,repeat:1,ease:'power1.inOut'});ripple(p.x,p.y);press(el);});
+    tl.add(()=>{const p=pos(el);gsap.fromTo(cur,{scale:1},{scale:.86,duration:.1,yoyo:true,repeat:1,ease:'power1.inOut'});ripple(p.x,p.y);press(el);reactClick(el);if(isLast&&STEP_TOAST[PLAYER.i])wfToast(STEP_TOAST[PLAYER.i]);});
   });
 }
 function showFrame(i){
@@ -542,8 +546,8 @@ function stopPlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; PLAYER.pl
 function buildPlayer(steps){
   PLAYER.steps=steps; PLAYER.i=0; PLAYER.playing=false;
   $('#plScreen').innerHTML=steps.map((s,i)=>`<div class="frame" data-fr="${i}">${frameVisual(i)}<div class="cap"><div class="t">${s.title}</div><div class="c">${s.caption}</div></div></div>`).join('')
-    +`<svg class="wf-cursor" id="plCursor" viewBox="0 0 24 24" width="22" height="22" fill="#fff" stroke="#0f2038" stroke-width="1.3" stroke-linejoin="round"><path d="M5 3l6 16 2.4-6.6L20 10z"/></svg><div class="wf-click" id="plClick"></div>`
-    +`<div class="poster" id="plPoster"><div class="pc">${svg(ICON.play,30)}</div></div>`;
+    +`<svg class="wf-cursor" id="plCursor" viewBox="0 0 24 24" width="22" height="22" fill="#fff" stroke="#0f2038" stroke-width="1.3" stroke-linejoin="round"><path d="M5 3l6 16 2.4-6.6L20 10z"/></svg><div class="wf-click" id="plClick"></div><div class="wf-toast" id="plToast"></div>`
+    +`<div class="poster" id="plPoster"><div class="poster-in"><div class="pc">${svg(ICON.play,30)}</div><div class="poster-lbl">Play the guided tour</div></div></div>`;
   $('#plBar').innerHTML=steps.map((s,i)=>`<div class="wf-seg" data-seg="${i}" title="${esc(s.title)}"><i></i></div>`).join('');
   showFrame(0);
   $('#plPoster').onclick=playPlayer;
