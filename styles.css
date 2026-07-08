@@ -101,6 +101,7 @@ code{font-family:var(--mono);font-size:.85em;background:var(--surface-2);border:
 .content{flex:1;padding:26px 30px 60px;max-width:1240px;width:100%;margin:0 auto}
 .view{display:none}
 .view.active{display:block;animation:viewin .42s var(--ease)}
+.view.gv.active{animation:none} /* GSAP handles entrance for these views (home/dashboard/results/consensus) */
 @keyframes viewin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:22px;flex-wrap:wrap}
 .page-head h1{font-size:1.7rem;font-weight:800}

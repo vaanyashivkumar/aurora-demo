@@ -69,8 +69,8 @@ const ICON = {
   warn:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
   activity:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
 };
-const NAV=[{r:'home',l:'Home',i:ICON.home},{r:'dashboard',l:'Dashboard',i:ICON.dashboard},{r:'patients',l:'Patients',i:ICON.patients},{r:'add-patient',l:'New analysis',i:ICON.scan},{r:'compare',l:'Compare',i:ICON.compare},{r:'reports',l:'Reports',i:ICON.reports},{r:'documentation',l:'Docs',i:ICON.docs}];
-const CRUMB={home:'Home',dashboard:'Dashboard',patients:'Patients','add-patient':'New analysis','image-selection':'New analysis · Scan selection',results:'Prediction analysis',compare:'Model comparison',reports:'Reports',documentation:'Documentation',settings:'Settings',audit:'Audit log',about:'About this build'};
+const NAV=[{r:'home',l:'Home',i:ICON.home},{r:'dashboard',l:'Dashboard',i:ICON.dashboard},{r:'patients',l:'Patients',i:ICON.patients},{r:'add-patient',l:'New analysis',i:ICON.scan},{r:'compare',l:'Model Consensus',i:ICON.compare},{r:'reports',l:'Reports',i:ICON.reports},{r:'documentation',l:'Docs',i:ICON.docs}];
+const CRUMB={home:'Home',dashboard:'Dashboard',patients:'Patients','add-patient':'New analysis','image-selection':'New analysis · Scan selection',results:'Prediction analysis',compare:'Model Consensus',reports:'Reports',documentation:'Documentation',settings:'Settings',audit:'Audit log',about:'About this build'};
 
 /* ---- synthetic MRI scan ---- */
 function scanSVG(seed=0){
@@ -114,6 +114,7 @@ function go(r,arg){
   $('#crumb').innerHTML=`<b>${CRUMB[r]||r}</b>`;
   window.scrollTo({top:0});
   ({home:renderHome,dashboard:renderDashboard,patients:renderPatients,'add-patient':renderAddPatient,'image-selection':renderImageSelection,results:()=>renderResults(arg),compare:renderCompare,reports:renderReports,documentation:renderDocs,settings:renderSettings,audit:renderAudit,about:renderAbout}[r]||(()=>{}))();
+  animate(r);
 }
 function buildRail(){$('#railLinks').innerHTML=NAV.map(n=>`<button class="rail-link" data-route="${n.r}" title="${n.l}" aria-label="${n.l}">${svg(n.i,21)}<span class="tip">${n.l}</span></button>`).join('');}
 function fillUser(){const c=D.clinician;$('#userName').textContent=c.name;$('#userRole').textContent=c.role;$('#userAv').textContent=c.initials;$('#railAva').textContent=c.initials;$('#dashFirst').textContent='Dr. '+(c.name.split(' ').slice(-1)[0]);}
@@ -121,11 +122,11 @@ function fillUser(){const c=D.clinician;$('#userName').textContent=c.name;$('#us
 /* ===================== DASHBOARD ===================== */
 function kpiIcon(i){return [ICON.patients,ICON.scan,'<path d="M22 12A10 10 0 1 1 12 2"/><path d="M22 4 12 14.01l-3-3"/>',ICON.warn][i]||ICON.dashboard;}
 function renderDashboard(){
-  $('#dashKpis').innerHTML=D.stats.map((s,i)=>`<div class="kpi fu d${i+1}"><div class="ic">${svg(kpiIcon(i),20)}</div><div class="lbl">${esc(s.label)}</div><div class="val tnum" data-cv="${esc(s.value)}">0</div><div class="delta ${s.trend==='up'?'up':'down'}">${svg(s.trend==='up'?'<path d="M7 17 17 7M17 7H8M17 7v9"/>':'<path d="M7 7l10 10M17 17H8M17 17V8"/>',13)} ${esc(s.delta)}</div></div>`).join('');
+  $('#dashKpis').innerHTML=D.stats.map((s,i)=>`<div class="kpi"><div class="ic">${svg(kpiIcon(i),20)}</div><div class="lbl">${esc(s.label)}</div><div class="val tnum" data-cv="${esc(s.value)}">0</div><div class="delta ${s.trend==='up'?'up':'down'}">${svg(s.trend==='up'?'<path d="M7 17 17 7M17 7H8M17 7v9"/>':'<path d="M7 7l10 10M17 17H8M17 17V8"/>',13)} ${esc(s.delta)}</div></div>`).join('');
   $$('#dashKpis .val').forEach(e=>animateCount(e,e.dataset.cv));
   const recent=[...D.patients].sort((a,b)=>b.uploadedAt.localeCompare(a.uploadedAt)).slice(0,6);
   $('#dashRecent').innerHTML=`<thead><tr><th>Patient</th><th>Model</th><th>Prediction</th><th>Status</th></tr></thead><tbody>${recent.map(p=>rowPatient(p,true)).join('')}</tbody>`;
-  const acts=[{r:'add-patient',t:'New analysis',s:'Upload &amp; run a model',i:ICON.plus},{r:'compare',t:'Compare',s:'Two models, one scan',i:ICON.compare},{r:'reports',t:'Reports',s:`${D.reports.length} generated`,i:ICON.reports},{r:'documentation',t:'Docs',s:'Guides &amp; glossary',i:ICON.book}];
+  const acts=[{r:'add-patient',t:'New analysis',s:'Upload &amp; run a model',i:ICON.plus},{r:'compare',t:'Model Consensus',s:'Two models, one verdict',i:ICON.compare},{r:'reports',t:'Reports',s:`${D.reports.length} generated`,i:ICON.reports},{r:'documentation',t:'Docs',s:'Guides &amp; glossary',i:ICON.book}];
   $('#quickActions').innerHTML=acts.map(a=>`<div class="qa" data-route="${a.r}"><div class="ic">${svg(a.i,20)}</div><div class="tx"><b>${a.t}</b><span>${a.s}</span></div></div>`).join('');
   const usage={};D.patients.forEach(p=>usage[p.model]=(usage[p.model]||0)+1);const maxU=Math.max(1,...Object.values(usage));
   $('#modelUsage').innerHTML=MODELS.map(m=>{const c=usage[m.label]||0;return `<div style="margin-bottom:12px"><div class="between" style="font-size:.82rem;margin-bottom:5px"><span style="color:var(--ink-2);font-weight:600">${esc(m.label)} ${m.isNew?'<span class="chip new" style="padding:.05rem .4rem">NEW</span>':''}</span><span class="muted tnum">${c}</span></div><div style="height:8px;background:var(--surface-2);border-radius:5px;overflow:hidden"><div style="height:100%;width:${c/maxU*100}%;border-radius:5px;background:linear-gradient(90deg,var(--teal),var(--cyan));transition:width .7s var(--ease)"></div></div></div>`;}).join('');
@@ -249,14 +250,14 @@ function wireScanDetail(p){
 function renderCompare(){
   const opts=MODELS.map(m=>`<option value="${m.value}">${m.label}${m.isNew?' · NEW':''}</option>`).join('');
   $('#cmpA').innerHTML=opts;$('#cmpB').innerHTML=opts;$('#cmpA').value='Sienna';$('#cmpB').value='end2end';
-  $('#cmpResult').innerHTML=`<div class="card pad" style="text-align:center;color:var(--muted);padding:40px">Choose two models and run a comparison on a shared scan set.</div>`;
+  $('#cmpResult').innerHTML=`<div class="card pad" style="text-align:center;color:var(--muted);padding:40px">Choose two models and run a consensus on a shared scan set.</div>`;
 }
 function runCompare(){
   const A=findModel($('#cmpA').value),B=findModel($('#cmpB').value),n=Math.max(1,Math.min(12,+$('#cmpN').value||6));
   const mk=m=>{const ls=m.labels[0],classes=LABEL_SETS[ls],preds=genPreds(classes.length,n),a=avg(preds),top=a.indexOf(Math.max(...a));return{m,classes,a,top,conf:a[top]};};
   const ra=mk(A),rb=mk(B);
   const agree=ra.classes[ra.top]===rb.classes[rb.top];
-  logAudit('Ran comparison',A.label+' vs '+B.label);
+  logAudit('Ran model consensus',A.label+' vs '+B.label);
   const panel=r=>`<div class="card pad lift"><div class="between" style="margin-bottom:8px"><h3 style="font-size:1rem">${esc(r.m.label)} ${r.m.isNew?'<span class="chip new">NEW</span>':''}</h3>${r.m.heatmap?'<span class="chip">heatmap</span>':'<span class="chip">no heatmap</span>'}</div><div style="display:grid;place-items:center;padding:6px 0 12px">${donut(r.a,r.classes,180)}</div><div>${r.classes.map((c,i)=>`<div class="prow"><span class="sw" style="background:${COLORS[i%COLORS.length]}"></span><span class="nm">${esc(c)}</span><span class="v tnum">${(r.a[i]*100).toFixed(1)}%</span></div>`).join('')}</div></div>`;
   $('#cmpResult').innerHTML=`<div class="alert ${agree?'':'warn'}" style="margin-bottom:16px"><span class="ic">${svg(agree?'<path d="M20 6 9 17l-5-5"/>':ICON.warn,18)}</span><div><h4>${agree?'Models agree':'Models disagree'} — ${esc(ra.classes[ra.top])} (${Math.round(ra.conf*100)}%) vs ${esc(rb.classes[rb.top])} (${Math.round(rb.conf*100)}%)</h4><p>${agree?'Both models return the same top class on this scan set.':'The two models disagree on the top class — recommend clinician review or a third opinion.'}</p></div></div><div class="grid-2" style="align-items:start">${panel(ra)}${panel(rb)}</div>`;
 }
@@ -270,7 +271,7 @@ function renderDocs(){
     {h:'Getting started',b:'Add a patient and upload their MRI series, choose one of the five AI models and its category set, then run the prediction. Aurora returns a per-slice breakdown, an aggregate donut, and a downloadable report.'},
     {h:'Choosing a model',b:'Sienna, NeuroXAI and Inception are the original models and produce Grad-CAM heatmaps. <b>End-to-End CNN</b> and <b>Model 1 CNN</b> are the two new PyTorch models added on this branch — they run faster but do not produce heatmaps.'},
     {h:'Reading results',b:'Each slice is a stacked bar of class probabilities. Click a slice to open the scan viewer and, where available, toggle the Grad-CAM heatmap. Low-confidence cases are flagged automatically for review.'},
-    {h:'Comparing models',b:'Use <b>Compare</b> to run two models on the same scan set side by side and see whether they agree.'},
+    {h:'Model consensus',b:'Use <b>Model Consensus</b> to run two models on the same scan set and see where they agree.'},
   ].map(d=>`<div class="card pad"><h3 style="font-size:1.02rem;margin-bottom:6px">${d.h}</h3><p class="muted" style="margin:0;font-size:.9rem">${d.b}</p></div>`).join('');
   const terms=[['GBM','Glioblastoma — aggressive primary tumour'],['MET','Metastasis — spread from elsewhere'],['NON / Non-Tumor','No tumour detected'],['TUM','Tumour present'],['Glioma / Meningioma / Pituitary','Sienna tumour types'],['Grad-CAM','Heat overlay of where the model looked']];
   $('#glossary').innerHTML=terms.map(t=>`<div class="term" style="grid-template-columns:1fr;gap:2px;padding:9px 0"><dt>${t[0]}</dt><dd>${t[1]}</dd></div>`).join('');
@@ -364,11 +365,78 @@ function renderSearchPop(q){const pop=$('#searchPop');if(!q){pop.classList.remov
 
 function delPatient(p){modal(`<div class="modal-h"><h3 style="font-size:1.05rem">Delete patient?</h3><p class="muted" style="font-size:.85rem;margin:4px 0 0">This removes ${esc(p.name)} and their study from your workspace.</p></div><div class="modal-f"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn danger" id="delYes">Delete</button></div>`);$('#delYes').onclick=()=>{D.patients=D.patients.filter(x=>x.id!==p.id);savePatients();logAudit('Deleted patient',p.name);closeModal();toast('Patient deleted');if(route==='patients')renderPatients();else go('patients');};}
 
+/* ===================== GSAP motion layer =====================
+   Vanilla-JS equivalent of the requested React setup: ScrollTrigger is
+   registered once, every view's animations live in a gsap.context() scoped
+   to that view, and the context is reverted on navigation (safe cleanup, no
+   leaks). Respects prefers-reduced-motion. No layout/design changes — motion only. */
+const GSAP_OK = typeof window!=='undefined' && !!window.gsap;
+if(GSAP_OK && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+const EASE='power3.out';
+let VIEW_CTX=null;
+const prefersReduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function hoverGlow(sel,color){
+  gsap.utils.toArray(sel).forEach(card=>{
+    const base=getComputedStyle(card).boxShadow;
+    card.addEventListener('mouseenter',()=>gsap.to(card,{boxShadow:`0 24px 55px -26px ${color}`,duration:.35,ease:'power2.out'}));
+    card.addEventListener('mouseleave',()=>gsap.to(card,{boxShadow:base,duration:.45,ease:'power2.out'}));
+  });
+}
+function staggerIn(sel,o={}){
+  const items=gsap.utils.toArray(sel); if(!items.length)return;
+  gsap.from(items,{y:o.y??22,opacity:0,duration:o.d??.6,stagger:o.stagger??.08,ease:EASE,clearProps:'transform,opacity',
+    scrollTrigger:o.trigger?{trigger:o.trigger,start:o.start||'top 86%',once:true}:undefined});
+}
+function countUp(el,end){const s={v:0};gsap.to(s,{v:end,duration:1.1,ease:EASE,onUpdate:()=>{el.textContent=Math.round(s.v);}});}
+function animate(route){
+  if(VIEW_CTX){try{VIEW_CTX.revert();}catch(e){}VIEW_CTX=null;}
+  if(!GSAP_OK || prefersReduced()) return;
+  const el=document.getElementById('view-'+route); if(!el)return;
+  VIEW_CTX=gsap.context(()=>{
+    if(route==='home')animHome();
+    else if(route==='dashboard')animDashboard();
+    else if(route==='results')animResults();
+    else if(route==='compare')animConsensus();
+    if(window.ScrollTrigger)ScrollTrigger.refresh();
+  },el);
+}
+function animHome(){
+  gsap.from('.home-hero .eyebrow, .home-hero h1, .home-hero p, .home-hero .cta, .home-hero .hstats',
+    {y:26,opacity:0,duration:.75,stagger:.09,ease:EASE,clearProps:'transform,opacity'});
+  gsap.utils.toArray('.home-hero .hstats b').forEach(b=>countUp(b,parseInt(b.textContent,10)||0));
+  gsap.to('.player',{yPercent:-5,ease:'none',scrollTrigger:{trigger:'.player',start:'top bottom',end:'bottom top',scrub:.6}});
+  staggerIn('.cap-grid .cap',{trigger:'.cap-grid',y:26});
+  staggerIn('.models-grid .mcard',{trigger:'.models-grid',y:28});
+  gsap.from('.player',{y:34,opacity:0,duration:.7,ease:EASE,clearProps:'transform,opacity',scrollTrigger:{trigger:'.player',start:'top 90%',once:true}});
+  hoverGlow('.mcard, .cap','rgba(14,168,150,.5)');
+}
+function animDashboard(){
+  gsap.from('#dashKpis .kpi',{y:22,opacity:0,duration:.6,stagger:.08,ease:EASE,clearProps:'transform,opacity'});
+  gsap.from('#view-dashboard .grid-2 > .stack > .card, #view-dashboard .grid-2 > .stack .qa',
+    {y:24,opacity:0,duration:.6,stagger:.06,ease:EASE,delay:.12,clearProps:'transform,opacity'});
+  hoverGlow('#view-dashboard .qa','rgba(14,168,150,.45)');
+}
+function animResults(){
+  gsap.from('#view-results .page-head',{y:18,opacity:0,duration:.5,ease:EASE,clearProps:'transform,opacity'});
+  gsap.from('#view-results > .card, #view-results > .alert',{y:24,opacity:0,duration:.55,stagger:.09,ease:EASE,delay:.05,clearProps:'transform,opacity'});
+  staggerIn('#view-results .grid-2 .card',{trigger:'#view-results .grid-2',y:26,stagger:.12});
+}
+function animConsensus(){
+  gsap.from('#view-compare .page-head, #view-compare > .card',{y:22,opacity:0,duration:.6,stagger:.1,ease:EASE,clearProps:'transform,opacity'});
+}
+function animConsensusResult(){
+  if(!GSAP_OK || prefersReduced()) return;
+  gsap.from('#cmpResult .alert',{y:-10,opacity:0,duration:.5,ease:EASE,clearProps:'transform,opacity'});
+  gsap.from('#cmpResult .grid-2 > .card',{y:30,opacity:0,scale:.985,duration:.6,stagger:.14,ease:EASE,delay:.08,clearProps:'transform,opacity,scale'});
+  gsap.fromTo('#cmpResult .alert .ic',{scale:.82,opacity:0},{scale:1,opacity:1,duration:.5,ease:EASE,delay:.18});
+  hoverGlow('#cmpResult .card','rgba(14,168,150,.55)');
+}
+
 /* ===================== HOME / LANDING ===================== */
 const HOME = {
   copy: {
     hero:{tagline:"Clinical AI for brain MRI",headline:"Detect and classify brain tumours across an MRI series, one slice at a time.",sub:"Aurora is a clinical web console that runs a patient's MRI scan series through explainable AI models, scoring each slice for tumour type. It surfaces per-slice results, aggregate confidence, and heatmaps in a single report-ready view for the reviewing physician."},
-    whatItDoes:[{title:"Upload",text:"Sign in, add a patient, and upload their MRI scan series in a few clicks."},{title:"Analyse",text:"Choose an AI model and its category set; Aurora scores every slice and aggregates the series."},{title:"Explain",text:"Read per-slice bars, an aggregate donut, and Grad-CAM heatmaps where available, with automatic alerts on low-confidence slices."},{title:"Report",text:"Generate a PDF report, record feedback, or compare two models side by side."}],
+    whatItDoes:[{title:"Upload",text:"Sign in, add a patient, and upload their MRI scan series in a few clicks."},{title:"Analyse",text:"Choose an AI model and its category set; Aurora scores every slice and aggregates the series."},{title:"Explain",text:"Read per-slice bars, an aggregate donut, and Grad-CAM heatmaps where available, with automatic alerts on low-confidence slices."},{title:"Report",text:"Generate a PDF report, record feedback, or run a Model Consensus across two models."}],
     models:[
       {name:"Sienna",isNew:false,categories:"Non-Tumor, MET, GBM · Pituitary, Meningioma, Glioma",heatmap:true,blurb:"A versatile multi-class classifier spanning two category sets, with Grad-CAM heatmaps for slice-level explainability. Best when you need broad tumour-type coverage from a single model."},
       {name:"NeuroXAI",isNew:false,categories:"Non-Tumor, MET, GBM",heatmap:true,blurb:"A ResNet-based classifier built for explainability, pairing tumour scoring with Grad-CAM heatmaps. Best when interpretability of each prediction is the priority."},
@@ -384,7 +452,7 @@ const HOME = {
     {title:"Choose an AI model",caption:"Pick from five models — including the two new ones, End-to-End CNN (GBM/MET/NON) and Model 1 CNN (TUM/NON).",url:"/image-selection"},
     {title:"Prediction results",caption:"The model scores every slice: per-slice probability bars, an aggregate donut and an overall confidence score.",url:"/prediction"},
     {title:"Scan viewer & heatmap",caption:"Inspect each slice and toggle the Grad-CAM heatmap — available for Sienna, NeuroXAI and Inception.",url:"/prediction/viewer"},
-    {title:"Compare two models",caption:"Run two models side by side on the same series to check whether they agree before reporting.",url:"/compare"}
+    {title:"Model consensus",caption:"Run two models side by side on the same series to see where they agree before reporting.",url:"/consensus"}
   ]}
 };
 
@@ -525,7 +593,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('#runBtn').onclick=()=>{if(!wizard.selected.size){toast('Select at least one slice');return;}runPrediction();};
 
   // compare
-  $('#cmpRun').onclick=runCompare;
+  $('#cmpRun').onclick=()=>{runCompare();animConsensusResult();};
   // audit
   $('#auditClear').onclick=()=>{AUDIT=[];try{localStorage.removeItem(LS.audit);}catch(e){}renderAudit();toast('Audit log cleared');};
 

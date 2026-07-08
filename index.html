@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Aurora AI — Clinical Console</title>
-<link rel="stylesheet" href="styles.css?v=10">
+<link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
 
@@ -64,10 +64,10 @@
 
     <main class="content">
       <!-- HOME -->
-      <section id="view-home" class="view"></section>
+      <section id="view-home" class="view gv"></section>
 
       <!-- DASHBOARD -->
-      <section id="view-dashboard" class="view">
+      <section id="view-dashboard" class="view gv">
         <div class="page-head"><div><h1>Good morning, <span id="dashFirst">Doctor</span></h1><p id="dashSub">Here's what's happening across your studies today.</p></div><button class="btn primary" data-route="add-patient"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> New analysis</button></div>
         <div class="kpis" id="dashKpis"></div>
         <div class="grid-2" style="margin-top:18px">
@@ -133,7 +133,7 @@
       </section>
 
       <!-- RESULTS -->
-      <section id="view-results" class="view"></section>
+      <section id="view-results" class="view gv"></section>
 
       <!-- REPORTS -->
       <section id="view-reports" class="view">
@@ -157,15 +157,15 @@
         <div id="settingsBody"></div>
       </section>
 
-      <!-- COMPARE -->
-      <section id="view-compare" class="view">
-        <div class="page-head"><div><h1>Model comparison</h1><p>Run two models on the same scan set and see them side by side.</p></div></div>
+      <!-- MODEL CONSENSUS (route id 'compare' kept internal) -->
+      <section id="view-compare" class="view gv">
+        <div class="page-head"><div><h1>Model Consensus</h1><p>Run two models on the same scan set and see where they agree.</p></div></div>
         <div class="card pad" style="margin-bottom:16px">
           <div class="row" style="gap:16px;align-items:flex-end">
             <div class="field" style="flex:1;min-width:190px"><label>Model A</label><select class="input" id="cmpA"></select></div>
             <div class="field" style="flex:1;min-width:190px"><label>Model B</label><select class="input" id="cmpB"></select></div>
             <div class="field" style="width:130px"><label>Slices</label><input class="input" id="cmpN" type="number" value="6" min="1" max="12"></div>
-            <button class="btn primary" id="cmpRun"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 3l14 9-14 9V3z"/></svg> Run comparison</button>
+            <button class="btn primary" id="cmpRun"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 3l14 9-14 9V3z"/></svg> Run consensus</button>
           </div>
         </div>
         <div id="cmpResult"></div>
@@ -193,7 +193,9 @@
 <div id="modalRoot"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="data.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="gsap.min.js"></script>
+<script src="ScrollTrigger.min.js"></script>
+<script src="data.js?v=11"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
