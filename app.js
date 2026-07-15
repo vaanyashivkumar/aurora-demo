@@ -404,11 +404,13 @@ function animHome(){
   gsap.from('.home-hero .eyebrow, .home-hero h1, .home-hero p, .home-hero .cta, .home-hero .hstats',
     {y:26,opacity:0,duration:.75,stagger:.09,ease:EASE,clearProps:'transform,opacity'});
   gsap.utils.toArray('.home-hero .hstats b').forEach(b=>countUp(b,parseInt(b.textContent,10)||0));
-  gsap.to('.player',{yPercent:-5,ease:'none',scrollTrigger:{trigger:'.player',start:'top bottom',end:'bottom top',scrub:.6}});
+  staggerIn('.trust-bar span',{trigger:'.trust-bar',y:12,stagger:.05,d:.45});
   staggerIn('.cap-grid .cap',{trigger:'.cap-grid',y:26});
+  staggerIn('.why-grid .why',{trigger:'.why-grid',y:26,stagger:.1});
   staggerIn('.models-grid .mcard',{trigger:'.models-grid',y:28});
+  gsap.from('.close-band',{y:30,opacity:0,duration:.7,ease:EASE,clearProps:'transform,opacity',scrollTrigger:{trigger:'.close-band',start:'top 88%',once:true}});
   gsap.from('.player',{y:34,opacity:0,duration:.7,ease:EASE,clearProps:'transform,opacity',scrollTrigger:{trigger:'.player',start:'top 90%',once:true}});
-  hoverGlow('.mcard, .cap-grid .cap','rgba(14,168,150,.5)');
+  hoverGlow('.mcard, .cap-grid .cap, .why-grid .why','rgba(14,168,150,.5)');
   const player=document.querySelector('.player');
   if(player){const base=getComputedStyle(player).boxShadow;
     player.addEventListener('mouseenter',()=>gsap.to(player,{y:-4,boxShadow:'0 34px 70px -30px rgba(16,32,56,.55)',duration:.4,ease:'power2.out'}));
@@ -438,135 +440,447 @@ function animConsensusResult(){
 
 /* ===================== HOME / LANDING ===================== */
 const HOME = {
-  copy: {
-    hero:{tagline:"Clinical AI for brain MRI",headline:"Detect and classify brain tumours across an MRI series, one slice at a time.",sub:"Aurora is a clinical web console that runs a patient's MRI scan series through explainable AI models, scoring each slice for tumour type. It surfaces per-slice results, aggregate confidence, and heatmaps in a single report-ready view for the reviewing physician."},
-    whatItDoes:[{title:"Upload",text:"Sign in, add a patient, and upload their MRI scan series in a few clicks."},{title:"Analyse",text:"Choose an AI model and its category set; Aurora scores every slice and aggregates the series."},{title:"Explain",text:"Read per-slice bars, an aggregate donut, and Grad-CAM heatmaps where available, with automatic alerts on low-confidence slices."},{title:"Report",text:"Generate a PDF report, record feedback, or run a Model Consensus across two models."}],
-    models:[
-      {name:"Sienna",isNew:false,categories:"Non-Tumor, MET, GBM · Pituitary, Meningioma, Glioma",heatmap:true,blurb:"A versatile multi-class classifier spanning two category sets, with Grad-CAM heatmaps for slice-level explainability. Best when you need broad tumour-type coverage from a single model."},
-      {name:"NeuroXAI",isNew:false,categories:"Non-Tumor, MET, GBM",heatmap:true,blurb:"A ResNet-based classifier built for explainability, pairing tumour scoring with Grad-CAM heatmaps. Best when interpretability of each prediction is the priority."},
-      {name:"Inception",isNew:false,categories:"Non-Tumor, MET, GBM",heatmap:true,blurb:"An InceptionV3-based classifier for Non-Tumor, MET, and GBM, with Grad-CAM heatmaps. A strong general-purpose second opinion on the same three classes."},
-      {name:"End-to-End CNN",isNew:true,categories:"GBM, MET, Non-Tumor",heatmap:false,blurb:"A fast PyTorch model that classifies each slice across GBM, MET, and Non-Tumor in a single end-to-end pass. Best for quick three-class triage; no heatmap."},
-      {name:"Model 1 CNN",isNew:true,categories:"Tumour, Non-Tumor",heatmap:false,blurb:"A lightweight PyTorch model for rapid tumour-versus-no-tumour screening. Best as a first-pass filter across a scan series; no heatmap."}
-    ]
+  hero:{
+    tagline:'Clinical AI for brain MRI',
+    headline:'Read every slice. Miss nothing.',
+    sub:'Aurora runs a patient’s full MRI series through validated AI models, scores every slice, shows you where the model is looking — and tells you when two models disagree.',
+    stats:[['5','AI models'],['2','new this release'],['16','demo patients']]
   },
-  story:{steps:[
-    {title:"Homepage",caption:"You land on the Aurora AI home — an overview of the platform and its five AI models.",url:"/"},
-    {title:"Dashboard Overview",caption:"The dashboard summarises patients, recent analyses and average model confidence at a glance.",url:"/dashboard"},
-    {title:"Key Insights",caption:"Drill into the aggregated class breakdown and the recommended next action.",url:"/dashboard/insights"},
-    {title:"AI Analysis",caption:"Upload a scan series and run a model — including the two new PyTorch models.",url:"/analysis"},
-    {title:"Model Consensus",caption:"Run two models on the same scans and confirm where they agree.",url:"/consensus"},
-    {title:"Final Output",caption:"A concise, report-ready recommendation: top class, confidence and next step.",url:"/report"},
-    {title:"Take Action",caption:"Export the PDF report, record feedback, or start the next analysis.",url:"/report"}
-  ]}
+  trust:['Per-slice scoring','Grad-CAM heatmaps','Model consensus','Confidence alerts','Audit trail'],
+  whatItDoes:[
+    {title:'Upload',text:'Add a patient and drop in their MRI scan series. A few clicks, no set-up.'},
+    {title:'Analyse',text:'Pick a model and its category set. Aurora scores every slice, then aggregates the series.'},
+    {title:'Explain',text:'Per-slice bars, an aggregate donut, and Grad-CAM heatmaps that show what drove the call.'},
+    {title:'Report',text:'Export a PDF, record feedback, or run a consensus across two models.'}
+  ],
+  why:[
+    {title:'It shows its work',icon:'eye',text:'Supported predictions come with a Grad-CAM heatmap, so you see the region behind the score — not just a number.'},
+    {title:'It admits uncertainty',icon:'warn',text:'Low-confidence and narrow-margin slices are flagged automatically and surfaced on the dashboard before you sign off.'},
+    {title:'It gets a second opinion',icon:'compare',text:'Model Consensus runs two models over the same series and shows precisely where they agree — and where they don’t.'}
+  ],
+  models:[
+    {name:'Sienna',isNew:false,categories:'Non-Tumor, MET, GBM · Pituitary, Meningioma, Glioma',heatmap:true,blurb:'A versatile multi-class classifier spanning two category sets, with Grad-CAM heatmaps for slice-level explainability. Best when you need broad tumour-type coverage from a single model.'},
+    {name:'NeuroXAI',isNew:false,categories:'Non-Tumor, MET, GBM',heatmap:true,blurb:'A ResNet-based classifier built for explainability, pairing tumour scoring with Grad-CAM heatmaps. Best when interpretability of each prediction is the priority.'},
+    {name:'Inception',isNew:false,categories:'Non-Tumor, MET, GBM',heatmap:true,blurb:'An InceptionV3-based classifier for Non-Tumor, MET, and GBM, with Grad-CAM heatmaps. A strong general-purpose second opinion on the same three classes.'},
+    {name:'End-to-End CNN',isNew:true,categories:'GBM, MET, Non-Tumor',heatmap:false,blurb:'A fast PyTorch model that classifies each slice across GBM, MET, and Non-Tumor in a single end-to-end pass. Best for quick three-class triage; no heatmap.'},
+    {name:'Model 1 CNN',isNew:true,categories:'Tumour, Non-Tumor',heatmap:false,blurb:'A lightweight PyTorch model for rapid tumour-versus-no-tumour screening. Best as a first-pass filter across a scan series; no heatmap.'}
+  ],
+  close:{h:'Watch it read a scan.',p:'Upload to report in about thirty seconds. The sample data is already loaded — there is nothing to set up.'}
 };
 
-let PLAYER={i:0,timer:null,steps:[]};
-const PL_DUR=4600;
+/* ---------- walkthrough: one script drives copy, visuals and choreography ----------
+   Each step owns its caption, its mini-screen markup, the elements the cursor clicks,
+   and any processing / toast / reveal beats. Step duration is derived from this — never
+   hard-coded — so a step with two clicks and a spinner gets the time it actually needs. */
 function wfRail(active){
   const items=[ICON.home,ICON.dashboard,ICON.scan,ICON.compare,ICON.reports];
   return `<div class="wf-rail"><div class="wf-brand">${svg(ICON.brain,15)}</div>${items.map((ic,k)=>`<div class="wf-rd ${k===active?'active':''}">${svg(ic,15)}</div>`).join('')}</div>`;
 }
 function wfBar(vec,opts={}){const t=vec.reduce((a,b)=>a+b,0)||1;return `<div class="wf-bar"${opts.full?' style="width:100%;height:9px"':''}>${vec.map((p,k)=>`<span style="width:${(p/t*100).toFixed(1)}%;background:${COLORS[k%COLORS.length]}"></span>`).join('')}</div>`;}
-function wfShell(active,heading,loc,body){
-  return `<div class="wf-screen">${wfRail(active)}<div class="wf-main"><div class="wf-head"><h4>${heading}</h4><span class="wf-loc">${loc}</span></div><div class="wf-body">${body}</div></div></div>`;
-}
-function frameVisual(i){
-  switch(i){
-    case 0: return wfShell(0,'Welcome to Aurora AI','Home',
-      `<div class="wf-hero"><div><div class="wf-brand" style="width:46px;height:46px;margin:0 auto 12px">${svg(ICON.brain,24)}</div><div style="font-size:1.1rem;font-weight:800;color:var(--ink)">Aurora AI</div><div style="font-size:.82rem;color:var(--muted);margin:4px 0 14px">Clinical AI for brain-MRI tumour detection</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">${[['5','models'],['2','new'],['16','patients']].map(s=>`<span class="wf-chip"><b style="color:var(--ink)">${s[0]}</b>&nbsp;${s[1]}</span>`).join('')}</div><span class="wf-cta">${svg(ICON.plus,15)} Start an analysis</span></div></div>`);
-    case 1: return wfShell(1,'Dashboard Overview','Dashboard',
-      `<div class="wf-kpis">${[['Patients','16'],['Analyses','9'],['Avg conf.','73%']].map(k=>`<div class="wf-kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div></div>`).join('')}</div>
-       <div class="wf-card"><div class="ct">Recent studies</div>${[['Marcus Delgado','MD',0,[.8,.15,.05]],['Priya Nair','PN',3,[.4,.5,.1]],['Kwame Osei','KO',6,[.1,.85,.05]]].map(r=>`<div class="wf-row"><span class="wf-ava" style="background:${AV_COLORS[r[2]%AV_COLORS.length]}">${r[1]}</span><span class="wf-name">${r[0]}</span>${wfBar(r[3])}</div>`).join('')}</div>`);
-    case 2: return wfShell(1,'Key Insights','Dashboard',
-      `<div class="wf-split"><div class="wf-donut">${donut([.6,.28,.12],['GBM','MET','NON'],118)}</div><div>${[['GBM','60%',0],['MET','28%',1],['NON','12%',2]].map(c=>`<div class="wf-krow"><span class="wf-sw" style="background:${COLORS[c[2]]}"></span><span class="wf-name">${c[0]}</span><b>${c[1]}</b></div>`).join('')}<div class="wf-chip hot" style="margin-top:10px">${svg(ICON.warn,12)}&nbsp;Recommend MDT review</div></div></div>`);
-    case 3: return wfShell(2,'AI Analysis','New analysis',
-      `<div class="wf-thumbs">${Array.from({length:6},(_,k)=>`<div class="wf-thumb">${scanSVG(k+2)}</div>`).join('')}</div>
-       <div class="wf-opts">${[['Sienna',0],['NeuroXAI',0],['Inception',0],['End-to-End CNN',1],['Model 1 CNN',1]].map(m=>`<div class="wf-opt ${m[1]?'hot':''}"><span>${m[0]}</span>${m[1]?'<span class="wf-badge">NEW</span>':''}</div>`).join('')}</div>
-       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto"><div class="wf-result" style="opacity:0"><span class="wf-sw" style="background:${COLORS[0]}"></span>GBM · <b>85%</b> confidence</div><span class="wf-cta" style="padding:.42rem .85rem;font-size:.78rem">${svg(ICON.play,13)} Run prediction</span></div>`);
-    case 4: return wfShell(3,'Model Consensus','Consensus',
-      `<div class="wf-split" style="grid-template-columns:1fr 1fr">${[['Sienna',[.7,.2,.1]],['End-to-End CNN',[.66,.24,.1]]].map(m=>`<div class="wf-donut"><div class="wf-name" style="margin-bottom:4px">${m[0]}</div>${donut(m[1],['GBM','MET','NON'],94)}</div>`).join('')}</div><div class="wf-chip hot" style="margin-top:10px">${svg('<path d="M20 6 9 17l-5-5"/>',12)}&nbsp;Models agree · GBM</div>`);
-    case 5: return wfShell(4,'Final Output','Reports',
-      `<div class="wf-card"><div class="ct">Recommendation</div><div style="font-size:1.2rem;font-weight:800;color:var(--ink)">Glioblastoma (GBM)</div><div style="font-size:.8rem;color:var(--muted);margin:3px 0 10px">Top class · 85% mean confidence across 6 slices</div>${wfBar([.85,.1,.05],{full:true})}<div class="wf-chip" style="margin-top:12px">Next step: refer to neuro-oncology MDT</div></div>`);
-    default: return wfShell(4,'Next Steps','Reports',
-      `<div class="wf-actions">${[[ICON.file,'Export PDF'],[ICON.refresh,'Record feedback'],[ICON.plus,'New analysis']].map(a=>`<div class="wf-action"><div class="ic">${svg(a[0],18)}</div>${a[1]}</div>`).join('')}</div>`);
+
+const STORY = [
+  {
+    title:'A study lands', loc:'Home', rail:0, url:'/',
+    heading:'Welcome to Aurora AI',
+    caption:'An MRI series arrives. Every slice in it needs a read.',
+    body:()=>`<div class="wf-hero"><div>
+      <div class="wf-brand" style="width:46px;height:46px;margin:0 auto 12px">${svg(ICON.brain,24)}</div>
+      <div style="font-size:1.1rem;font-weight:800;color:var(--ink)">Aurora AI</div>
+      <div style="font-size:.82rem;color:var(--muted);margin:4px 0 14px">Clinical AI for brain-MRI tumour detection</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">${[['5','models'],['6','slices'],['16','patients']].map(s=>`<span class="wf-chip"><b style="color:var(--ink)">${s[0]}</b>&nbsp;${s[1]}</span>`).join('')}</div>
+      <span class="wf-cta">${svg(ICON.plus,15)} Start an analysis</span>
+    </div></div>`,
+    targets:['.wf-cta'],
+    toast:'New analysis started'
+  },
+  {
+    title:'The queue', loc:'Dashboard', rail:1, url:'/dashboard',
+    heading:'Dashboard',
+    caption:'Sixteen patients. One flagged low-confidence, waiting on a human.',
+    body:()=>`<div class="wf-kpis">${[['Patients','16'],['Analyses','9'],['Avg conf.','73%']].map(k=>`<div class="wf-kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div></div>`).join('')}</div>
+      <div class="wf-card"><div class="ct">Recent studies</div>
+      ${[['Marcus Delgado','MD',0,[.8,.15,.05],1],['Priya Nair','PN',3,[.4,.5,.1],0],['Kwame Osei','KO',6,[.1,.85,.05],0]]
+        .map(r=>`<div class="wf-row${r[4]?' flag':''}"><span class="wf-ava" style="background:${AV_COLORS[r[2]%AV_COLORS.length]}">${r[1]}</span><span class="wf-name">${r[0]}${r[4]?'<span class="wf-flag">low confidence</span>':''}</span>${wfBar(r[3])}</div>`).join('')}
+      </div>`,
+    targets:['.wf-row.flag'],
+    toast:'Opening study · Marcus Delgado'
+  },
+  {
+    title:'The read', loc:'New analysis', rail:2, url:'/analysis',
+    heading:'AI Analysis',
+    caption:'Six slices, one model. Aurora scores every slice — not just the worst one.',
+    body:()=>`<div class="wf-thumbs">${Array.from({length:6},(_,k)=>`<div class="wf-thumb">${scanSVG(k+2)}</div>`).join('')}</div>
+      <div class="wf-opts">${[['Sienna',0],['NeuroXAI',0],['Inception',0],['End-to-End CNN',1],['Model 1 CNN',1]]
+        .map(m=>`<div class="wf-opt${m[1]?' hot':''}"><span>${m[0]}</span>${m[1]?'<span class="wf-badge">NEW</span>':''}</div>`).join('')}</div>
+      <div class="wf-runrow">
+        <div class="wf-result"><span class="wf-sw" style="background:${COLORS[0]}"></span>GBM · <b>85%</b> mean confidence</div>
+        <span class="wf-cta">${svg(ICON.play,13)} Run prediction</span>
+      </div>`,
+    targets:['.wf-opt.hot','.wf-cta'],
+    process:{msg:'Analysing 6 slices…',dur:1.35},
+    reveal:['.wf-result'],
+    toast:'Prediction complete · GBM 85%'
+  },
+  {
+    title:'The explanation', loc:'Results', rail:2, url:'/analysis/results',
+    heading:'Where the model is looking',
+    caption:'Grad-CAM lights up the region that drove the call. Not a black box.',
+    body:()=>`<div class="wf-scanrow">
+        <div class="wf-scan">${scanSVG(4)}<div class="wf-heat"></div></div>
+        <div class="wf-slices"><div class="ct">Per-slice confidence</div>
+        ${[[.62,.28,.10],[.71,.19,.10],[.83,.12,.05],[.90,.07,.03],[.77,.16,.07],[.58,.30,.12]]
+          .map((v,k)=>`<div class="wf-sl"><span class="n">S${k+1}</span>${wfBar(v,{full:true})}<b>${Math.round(v[0]*100)}%</b></div>`).join('')}
+        </div>
+      </div>
+      <div class="wf-runrow">
+        <span class="wf-chip hot">${svg(ICON.eye,12)}&nbsp;Show Grad-CAM heatmap</span>
+        <span class="wf-chip">Slice 4 · highest activation</span>
+      </div>`,
+    targets:['.wf-chip.hot'],
+    reveal:['.wf-heat'],
+    toast:'Heatmap on · slice 4'
+  },
+  {
+    title:'The disagreement', loc:'Consensus', rail:3, url:'/consensus',
+    heading:'Model Consensus',
+    caption:'A second model reads the same series and lands eleven points lower. That gap matters.',
+    body:()=>`<div class="wf-split" style="grid-template-columns:1fr 1fr">
+        ${[['Sienna',[.85,.10,.05]],['End-to-End CNN',[.74,.19,.07]]]
+          .map(m=>`<div class="wf-donut"><div class="wf-name" style="margin-bottom:4px">${m[0]}</div>${donut(m[1],['GBM','MET','NON'],92)}</div>`).join('')}
+      </div>
+      <div class="wf-runrow">
+        <div class="wf-verdict">${svg('<path d="M20 6 9 17l-5-5"/>',13)} Same top class · <b>GBM</b> · 11-point spread</div>
+        <span class="wf-cta">${svg(ICON.compare,13)} Run consensus</span>
+      </div>`,
+    targets:['.wf-cta'],
+    process:{msg:'Comparing both models…',dur:1.3},
+    reveal:['.wf-verdict'],
+    toast:'Consensus · both models say GBM'
+  },
+  {
+    title:'The decision', loc:'Reports', rail:4, url:'/report',
+    heading:'Final output',
+    caption:'One report-ready recommendation: top class, confidence, next step.',
+    body:()=>`<div class="wf-card"><div class="ct">Recommendation</div>
+        <div style="font-size:1.2rem;font-weight:800;color:var(--ink)">Glioblastoma (GBM)</div>
+        <div style="font-size:.8rem;color:var(--muted);margin:3px 0 10px">Top class · 85% mean confidence across 6 slices · 2 models agree</div>
+        ${wfBar([.85,.10,.05],{full:true})}
+        <div class="wf-chip" style="margin-top:12px">Next step: refer to neuro-oncology MDT</div>
+      </div>
+      <div class="wf-actions">${[[ICON.file,'Export PDF','export'],[ICON.refresh,'Record feedback',''],[ICON.plus,'New analysis','']]
+        .map(a=>`<div class="wf-action ${a[2]}"><div class="ic">${svg(a[0],18)}</div>${a[1]}</div>`).join('')}</div>`,
+    targets:['.wf-action.export'],
+    process:{msg:'Generating report…',dur:1.25},
+    toast:'Report exported (PDF)'
+  },
+  {
+    end:true, title:'Aurora AI', loc:'', rail:0, url:'/',
+    caption:'',
+    body:()=>`<div class="wf-endin">
+      <div class="wf-brand" style="width:52px;height:52px;margin:0 auto 14px">${svg(ICON.brain,26)}</div>
+      <h3>Upload to report in about thirty seconds.</h3>
+      <p>Five models, per-slice scoring, Grad-CAM heatmaps and a consensus check — on sample data, in your browser.</p>
+      <div class="wf-endcta">
+        <button class="btn primary" data-route="add-patient">${svg(ICON.plus,16)} Start an analysis</button>
+        <button class="btn" id="plReplay">${svg(ICON.refresh,16)} Replay</button>
+      </div>
+    </div>`
   }
+];
+const CONTENT_STEPS = STORY.filter(s=>!s.end).length;
+
+/* ---------- player state ---------- */
+const PLAYER = {tl:null,i:-1,marks:[],wantPlay:false,playing:false,io:null,onVis:null,onRz:null,_rz:null};
+const PAUSE = new Set();                 // reasons the tour is auto-paused (offscreen, hidden tab, hover)
+/* The caption is on screen for the whole step, so we don't append a full read-beat —
+   we just guarantee the step lasts long enough to read it at ~2.5 words/sec. */
+const READ_WPS = 2.5;
+const readTime = txt => .6 + String(txt).split(/\s+/).filter(Boolean).length/READ_WPS;
+
+function frameHTML(s){
+  if(s.end) return `<div class="wf-end">${s.body()}</div>`;
+  return `<div class="wf-screen">${wfRail(s.rail)}
+    <div class="wf-main">
+      <div class="wf-head"><h4>${esc(s.heading)}</h4><span class="wf-loc">${esc(s.loc)}</span></div>
+      <div class="wf-body">${s.body()}</div>
+    </div>
+    ${s.process?`<div class="wf-proc" aria-hidden="true"><span class="wf-proc-sp"></span><span>${esc(s.process.msg)}</span></div>`:''}
+    ${s.toast?`<div class="wf-toast" aria-hidden="true"><span class="d"></span>${esc(s.toast)}</div>`:''}
+  </div>`;
 }
-function revealPlayer(){ const p=$('#plPoster'); if(p)p.classList.add('hide'); const c=$('#plCursor'); if(c&&GSAP_OK)gsap.to(c,{opacity:1,duration:.3}); }
-function typeUrl(text){ const u=$('#plUrl'); if(!u)return; if(!GSAP_OK||prefersReduced()){u.textContent=text;return;} clearInterval(u._t); let n=0; u.textContent=''; u._t=setInterval(()=>{ n++; u.textContent=text.slice(0,n)+(n<text.length?'▏':''); if(n>=text.length){clearInterval(u._t);u.textContent=text;} },20); }
-/* per-step in-screen elements the cursor clicks (after navigating via the sidebar) */
-const CURSOR_TARGETS={0:['.wf-cta'],1:['.wf-card .wf-row'],2:['.wf-chip.hot'],3:['.wf-opt.hot','.wf-cta'],4:['.wf-chip.hot'],5:['.wf-chip'],6:['.wf-action']};
-function ripple(x,y){const r=$('#plClick');if(r){gsap.set(r,{x,y,scale:.3,opacity:.85});gsap.to(r,{scale:1.5,opacity:0,duration:.5,ease:'power2.out'});}}
-function press(el){if(el)gsap.fromTo(el,{scale:1},{scale:.95,duration:.12,ease:'power1.inOut',yoyo:true,repeat:1,transformOrigin:'50% 50%'});}
-const STEP_TOAST={0:'New analysis started',1:'Opening patient · Marcus Delgado',2:'Flagged for MDT review',3:'Prediction complete · GBM 85%',4:'Consensus reached · GBM',5:'Referral drafted',6:'Report exported (PDF)'};
-function reactClick(el){ if(!el)return; el.classList.add('wf-clicked'); setTimeout(()=>el.classList.remove('wf-clicked'),650); if(el.classList.contains('wf-opt'))el.classList.add('picked'); }
-function wfToast(msg){ const el=$('#plToast'); if(!el)return; el.innerHTML=`<span class="d"></span>${esc(msg)}`; if(!GSAP_OK||prefersReduced()){el.style.opacity='1';return;} gsap.killTweensOf(el); gsap.fromTo(el,{opacity:0,y:10},{opacity:1,y:0,duration:.35,ease:'power2.out'}); gsap.to(el,{opacity:0,y:8,duration:.4,delay:1.9,ease:'power2.in'}); }
-/* steps that show a brief processing state before the result toast */
-const STEP_PROCESS={3:{proc:'Analysing 6 slices…',done:'Prediction complete · GBM 85%'},6:{proc:'Generating report…',done:'Report exported (PDF)'}};
-function wfProcess(msg,cb){ const el=$('#plProc'); if(!el){cb&&cb();return;} const m=$('#plProcMsg'); if(m)m.textContent=msg; if(!GSAP_OK||prefersReduced()){cb&&cb();return;} gsap.killTweensOf(el); gsap.fromTo(el,{opacity:0,scale:.96},{opacity:1,scale:1,duration:.3,ease:'power2.out'}); gsap.to(el,{opacity:0,scale:.97,duration:.35,delay:1.05,ease:'power2.in',onComplete:()=>{cb&&cb();}}); }
-function revealResult(i){ if(i!==3)return; const r=document.querySelector('#plScreen .frame[data-fr="3"] .wf-result'); if(!r)return; if(GSAP_OK&&!prefersReduced())gsap.fromTo(r,{opacity:0,x:-8},{opacity:1,x:0,duration:.4,ease:'power2.out'}); else r.style.opacity='1'; }
-function stepFeedback(i){ const p=STEP_PROCESS[i]; if(p){wfProcess(p.proc,()=>{wfToast(p.done);revealResult(i);});} else if(STEP_TOAST[i]){wfToast(STEP_TOAST[i]);} }
-function cursorTour(fr){
-  if(!GSAP_OK||prefersReduced())return;
-  const scr=$('#plScreen'),cur=$('#plCursor'); if(!scr||!cur)return;
-  if(PLAYER.tour)PLAYER.tour.kill();
-  const seq=[];
-  const dot=fr.querySelector('.wf-rd.active'); if(dot)seq.push(dot);                 // 1) navigate via sidebar
-  (CURSOR_TARGETS[PLAYER.i]||[]).forEach(sel=>{const el=fr.querySelector(sel); if(el)seq.push(el);}); // 2) click in-screen controls
-  if(!seq.length)return;
-  const pos=el=>{const sr=$('#plScreen').getBoundingClientRect(),r=el.getBoundingClientRect();return {x:r.left-sr.left+r.width/2,y:r.top-sr.top+Math.min(r.height/2,18)};};
-  const tl=gsap.timeline({delay:.4}); PLAYER.tour=tl;
-  seq.forEach((el,idx)=>{
-    const isLast=idx===seq.length-1;
-    tl.to(cur,{x:()=>pos(el).x-5,y:()=>pos(el).y-3,opacity:1,duration:idx===0?.5:.55,ease:'power2.inOut'}, idx===0?0:'+=0.14');
-    tl.add(()=>{const p=pos(el);gsap.fromTo(cur,{scale:1},{scale:.86,duration:.1,yoyo:true,repeat:1,ease:'power1.inOut'});ripple(p.x,p.y);press(el);reactClick(el);if(isLast)stepFeedback(PLAYER.i);});
-  });
+function typeUrl(text){
+  const u=$('#plUrl'); if(!u)return;
+  if(!GSAP_OK||prefersReduced()){u.textContent=text;return;}
+  clearInterval(u._t); let n=0; u.textContent='';
+  u._t=setInterval(()=>{n++;u.textContent=text.slice(0,n)+(n<text.length?'▏':'');if(n>=text.length){clearInterval(u._t);u.textContent=text;}},20);
 }
-function resetFrameState(fr){ fr.querySelectorAll('.picked').forEach(el=>el.classList.remove('picked')); fr.querySelectorAll('.wf-result').forEach(el=>{el.style.opacity='0';}); }
-function showFrame(i){
-  PLAYER.i=i;
+function markClicked(el,at){
+  if(!el)return;
+  el._clickAt=at;                                  // remembered so the state can be un-done on a reverse scrub
+  el.classList.remove('wf-clicked'); void el.offsetWidth; el.classList.add('wf-clicked');
+  if(el.classList.contains('wf-opt'))el.classList.add('picked');
+}
+/* Eased, gently arced travel — reads as a hand, not a linear tween.
+   The path is a quadratic bezier, but it is emitted as a chain of REAL x/y tweens rather than
+   written from an onUpdate callback: gsap's seek() suppresses callbacks, so a callback-driven
+   cursor simply would not render when the user scrubs the timeline. Sampling the curve at
+   eased time (power2.inOut) puts the acceleration into the spacing, so equal-duration linear
+   segments still read as a smooth accelerate/decelerate. */
+const ARC_SEGS=12;
+const easeIO=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+function arcTo(tl,cur,from,to,at){
+  const dx=to.x-from.x,dy=to.y-from.y,dist=Math.hypot(dx,dy)||1;
+  const dur=Math.min(.95,Math.max(.4,.3+dist/760));
+  const bow=Math.min(44,dist*.18);
+  const cx=(from.x+to.x)/2-(dy/dist)*bow, cy=(from.y+to.y)/2+(dx/dist)*bow;
+  const seg=dur/ARC_SEGS;
+  for(let i=1;i<=ARC_SEGS;i++){
+    const k=easeIO(i/ARC_SEGS),u=1-k;
+    tl.to(cur,{x:u*u*from.x+2*u*k*cx+k*k*to.x-5,
+               y:u*u*from.y+2*u*k*cy+k*k*to.y-3,
+               duration:seg,ease:'none'},at+seg*(i-1));
+  }
+  return dur;
+}
+function clickBeat(tl,cur,clk,el,p,at){
+  tl.to(cur,{scale:.82,duration:.1,ease:'power1.in'},at);
+  tl.to(cur,{scale:1,duration:.2,ease:'back.out(3)'},at+.1);
+  tl.fromTo(clk,{x:p.x,y:p.y,scale:.3,opacity:.9},{scale:1.7,opacity:0,duration:.55,ease:'power2.out'},at);
+  tl.fromTo(el,{scale:1},{scale:.955,duration:.11,yoyo:true,repeat:1,ease:'power1.inOut',transformOrigin:'50% 50%'},at);
+  tl.call(markClicked,[el,at],at);
+}
+
+/* The mini-app is composed on a fixed STAGE_W×STAGE_H canvas and uniformly scaled to fit the
+   screen, so the walkthrough is pixel-identical at every viewport — nothing reflows out of the
+   frame on mobile, and the cursor path is resolution-independent. */
+const STAGE_W=920, STAGE_H=575;
+function fitStage(){
+  const scr=$('#plScreen'),st=$('#plStage'); if(!scr||!st)return 1;
+  const s=scr.clientWidth/STAGE_W;
+  st.style.transform=`scale(${s})`;
+  return s;
+}
+
+/* One master timeline owns the whole tour: frame entrances, cursor travel, clicks,
+   processing, toasts and the progress bar are all children of it. Scrub = seek. */
+function buildTimeline(){
+  const scr=$('#plScreen'),st=$('#plStage'); if(!scr||!st||!GSAP_OK)return;
+  if(PLAYER.tl){PLAYER.tl.kill();PLAYER.tl=null;}
+  const scale=fitStage()||1;
+  const cur=$('#plCursor'),clk=$('#plClick');
   const frames=$$('#plScreen .frame');
-  frames.forEach(f=>f.classList.toggle('on',+f.dataset.fr===i));
-  const s=PLAYER.steps[i];
-  typeUrl('aurora.health'+(s.url||''));
-  const cc=$('#plCount'); if(cc)cc.textContent='Step '+(i+1)+' of '+PLAYER.steps.length;
-  const playing=!!PLAYER.playing;
-  $$('#plBar .wf-seg').forEach((seg,k)=>{
-    const fill=seg.querySelector('i'); seg.classList.toggle('active',k===i); seg.classList.toggle('done',k<i);
-    if(!fill)return;
-    if(k<i)fill.style.width='100%';
-    else if(k>i)fill.style.width='0%';
-    else if(playing && GSAP_OK && !prefersReduced()){gsap.killTweensOf(fill);gsap.fromTo(fill,{width:'0%'},{width:'100%',duration:PL_DUR/1000,ease:'none'});}
-    else fill.style.width='100%';
+  const fills=$$('#plBar .wf-seg i');
+  /* stage coords: undo the scale so the cursor path lives in the 920×575 design space */
+  const rectOf=el=>{const sr=st.getBoundingClientRect(),r=el.getBoundingClientRect();
+    return {x:(r.left-sr.left)/scale+(r.width/scale)/2,
+            y:(r.top-sr.top)/scale+Math.min((r.height/scale)/2,20)};};
+  /* Measure every cursor target BEFORE any tween exists. The frame-entrance tweens use fromTo,
+     whose immediateRender applies a y:14 offset at build time — measuring after that would place
+     every target ~14px below where it actually sits at rest. */
+  const geo=STORY.map((s,i)=>{
+    const fr=frames[i]; if(!fr)return [];
+    const els=[];
+    const dot=fr.querySelector('.wf-rd.active'); if(dot)els.push(dot);            // navigate via the rail
+    (s.targets||[]).forEach(sel=>{const el=fr.querySelector(sel); if(el)els.push(el);});  // then the controls
+    return els.map(el=>({el,p:rectOf(el)}));
   });
-  const fr=frames[i];
-  if(fr)resetFrameState(fr);
-  if(fr && GSAP_OK && !prefersReduced()){
-    const scr=fr.querySelector('.wf-screen');
-    if(scr)gsap.fromTo(scr,{opacity:0,scale:1.04},{opacity:1,scale:1,duration:.5,ease:'power2.out',transformOrigin:'50% 45%',clearProps:'opacity,transform'}); // subtle zoom + fade
-    gsap.fromTo(fr.querySelectorAll('.wf-head, .wf-body > *'),{y:12},{y:0,duration:.45,stagger:.05,ease:'power2.out',delay:.08,clearProps:'transform'}); // slide
-    const cap=fr.querySelector('.cap'); if(cap)gsap.fromTo(cap,{opacity:0,y:10},{opacity:1,y:0,duration:.45,ease:'power2.out',delay:.12,clearProps:'transform,opacity'});
-    const dot=fr.querySelector('.wf-rd.active'); if(dot)gsap.fromTo(dot,{scale:.82},{scale:1,duration:.4,ease:'power2.out',delay:.1});
-  }
-  if(fr && $('#plPoster')&&$('#plPoster').classList.contains('hide')) cursorTour(fr);
+
+  const tl=gsap.timeline({paused:true,onUpdate:syncPlayer,onComplete:()=>{PLAYER.wantPlay=false;applyState();}});
+  let cp={x:STAGE_W/2,y:STAGE_H/2+16};                        // starts under the poster's play button
+  gsap.set(cur,{x:cp.x-5,y:cp.y-3,opacity:1,scale:1});   // placed before the first tick, so it is never at 0,0
+  /* Pin the resting position as the timeline's first child. Without this, a seek back to 0
+     leaves the cursor wherever a *future* tween's start-state render put it, and it snaps
+     when the first move begins. Owning it at t=0 makes the position a pure function of time. */
+  tl.set(cur,{x:cp.x-5,y:cp.y-3,opacity:1},0);
+  let t=0; const marks=[];
+
+  STORY.forEach((s,i)=>{
+    const fr=frames[i]; if(!fr)return;
+    const t0=t; marks.push(t0);
+    const sc=fr.querySelector('.wf-screen')||fr.querySelector('.wf-end');
+    if(sc)tl.fromTo(sc,{opacity:0,scale:1.035},{opacity:1,scale:1,duration:.5,ease:'power2.out',transformOrigin:'50% 45%'},t0);
+    const bits=fr.querySelectorAll('.wf-head, .wf-body > *, .wf-endin > *');
+    if(bits.length)tl.fromTo(bits,{y:14,opacity:0},{y:0,opacity:1,duration:.45,stagger:.06,ease:'power2.out'},t0+.08);
+    const cap=fr.querySelector('.cap');
+    if(cap)tl.fromTo(cap,{opacity:0,y:12},{opacity:1,y:0,duration:.45,ease:'power2.out'},t0+.12);
+    t=t0+.62;
+
+    if(s.end){
+      tl.to(cur,{opacity:0,duration:.3,ease:'power2.out'},t0);   // the hand leaves the screen on the outro
+      t=t0+1.2;
+    } else {
+      geo[i].forEach(({el,p})=>{
+        t+=arcTo(tl,cur,cp,p,t);
+        t+=.1;                                   // settle before the press
+        clickBeat(tl,cur,clk,el,p,t);
+        t+=.3;
+        cp=p;
+      });
+      if(s.process){
+        const pe=fr.querySelector('.wf-proc');
+        if(pe){
+          tl.fromTo(pe,{opacity:0,scale:.95},{opacity:1,scale:1,duration:.28,ease:'power2.out'},t);
+          tl.to(pe,{opacity:0,scale:.97,duration:.3,ease:'power2.in'},t+s.process.dur);
+          t+=s.process.dur+.3;
+        }
+      }
+      (s.reveal||[]).forEach(sel=>{
+        const el=fr.querySelector(sel);
+        if(el)tl.fromTo(el,{opacity:0,y:8},{opacity:1,y:0,duration:.45,ease:'power2.out'},t);
+      });
+      if((s.reveal||[]).length)t+=.32;
+      const te=fr.querySelector('.wf-toast');
+      if(te){
+        tl.fromTo(te,{opacity:0,y:10},{opacity:1,y:0,duration:.3,ease:'power2.out'},t);
+        tl.to(te,{opacity:0,y:8,duration:.35,ease:'power2.in'},t+1.7);
+        t+=.5;
+      }
+      t+=.45;                                          // let the last beat land
+      t=Math.max(t,t0+readTime(s.caption));            // …but never outrun the caption
+      if(fills[i])tl.fromTo(fills[i],{width:'0%'},{width:'100%',duration:Math.max(.4,t-t0),ease:'none'},t0);
+    }
+  });
+
+  PLAYER.marks=marks; PLAYER.tl=tl; PLAYER.i=-1;
+  tl.seek(0); syncPlayer();
 }
-function playPlayer(){ if(!PLAYER.steps.length)return; revealPlayer(); PLAYER.playing=true; const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.pause,18); showFrame(PLAYER.i); clearInterval(PLAYER.timer); if(prefersReduced()){PLAYER.timer=null;PLAYER.playing=false;return;} PLAYER.timer=setInterval(()=>showFrame((PLAYER.i+1)%PLAYER.steps.length),PL_DUR); }
-function pausePlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; PLAYER.playing=false; if(PLAYER.tour)PLAYER.tour.kill(); const pb=$('#plPlay'); if(pb)pb.innerHTML=svg(ICON.play,18); }
-function stopPlayer(){ clearInterval(PLAYER.timer); PLAYER.timer=null; PLAYER.playing=false; if(PLAYER.tour)PLAYER.tour.kill(); }
-function buildPlayer(steps){
-  PLAYER.steps=steps; PLAYER.i=0; PLAYER.playing=false;
-  $('#plScreen').innerHTML=steps.map((s,i)=>`<div class="frame" data-fr="${i}">${frameVisual(i)}<div class="cap"><div class="t">${s.title}</div><div class="c">${s.caption}</div></div></div>`).join('')
-    +`<svg class="wf-cursor" id="plCursor" viewBox="0 0 24 24" width="22" height="22" fill="#fff" stroke="#0f2038" stroke-width="1.3" stroke-linejoin="round"><path d="M5 3l6 16 2.4-6.6L20 10z"/></svg><div class="wf-click" id="plClick"></div><div class="wf-toast" id="plToast"></div><div class="wf-proc" id="plProc"><span class="wf-proc-sp"></span><span id="plProcMsg"></span></div>`
-    +`<div class="poster" id="plPoster"><div class="poster-in"><div class="pc">${svg(ICON.play,30)}</div><div class="poster-lbl">Play the guided tour</div></div></div>`;
-  $('#plBar').innerHTML=steps.map((s,i)=>`<div class="wf-seg" data-seg="${i}" title="${esc(s.title)}"><i></i></div>`).join('');
-  showFrame(0);
-  $('#plPoster').onclick=playPlayer;
-  $('#plPlay').onclick=()=>PLAYER.timer?pausePlayer():playPlayer();
-  $('#plPrev').onclick=()=>{revealPlayer();pausePlayer();showFrame((PLAYER.i-1+steps.length)%steps.length);};
-  $('#plNext').onclick=()=>{revealPlayer();pausePlayer();showFrame((PLAYER.i+1)%steps.length);};
-  $('#plBar').onclick=e=>{const seg=e.target.closest('.wf-seg');if(seg){revealPlayer();pausePlayer();showFrame(+seg.dataset.seg);}};
+
+function syncPlayer(){
+  const tl=PLAYER.tl; if(!tl)return;
+  const t=tl.time();
+  let i=0; for(let k=0;k<PLAYER.marks.length;k++) if(t>=PLAYER.marks[k]-.001) i=k;
+  if(i!==PLAYER.i) stepChanged(i);
+  /* click state is a pure function of time: anything "clicked" later than the playhead is un-clicked,
+     so scrubbing backwards inside a step cleans up too — not just crossing a step boundary. */
+  $$('#plScreen .picked, #plScreen .wf-clicked').forEach(el=>{
+    if(el._clickAt==null || el._clickAt>t+.001) el.classList.remove('picked','wf-clicked');
+  });
+  $$('#plBar .wf-seg').forEach((seg,k)=>{seg.classList.toggle('active',k===i);seg.classList.toggle('done',k<i);});
 }
+function stepChanged(i){
+  PLAYER.i=i; const s=STORY[i]; if(!s)return;
+  $$('#plScreen .frame').forEach((f,k)=>f.classList.toggle('on',k===i));
+  $$('#plScreen .picked').forEach(el=>el.classList.remove('picked'));      // transient click states never leak across steps
+  $$('#plScreen .wf-clicked').forEach(el=>el.classList.remove('wf-clicked'));
+  typeUrl('aurora.health'+(s.url||'/'));
+  const c=$('#plCount'); if(c)c.textContent = s.end?'Complete':`Step ${i+1} of ${CONTENT_STEPS}`;
+  const live=$('#plLive');
+  if(live)live.textContent = s.end?'Walkthrough complete.':`Step ${i+1} of ${CONTENT_STEPS}. ${s.title}. ${s.caption}`;
+}
+function setPlayIcon(){
+  const b=$('#plPlay'),tl=PLAYER.tl; if(!b||!tl)return;
+  const done=tl.progress()>=1;
+  b.innerHTML=svg(done?ICON.refresh:(PLAYER.playing?ICON.pause:ICON.play),18);
+  b.setAttribute('aria-label',done?'Replay walkthrough':(PLAYER.playing?'Pause walkthrough':'Play walkthrough'));
+}
+function applyState(){
+  const tl=PLAYER.tl; if(!tl)return;
+  const on=PLAYER.wantPlay && !PAUSE.size;
+  if(on)tl.play(); else tl.pause();
+  PLAYER.playing=on; setPlayIcon();
+}
+function revealPoster(){const p=$('#plPoster'); if(p)p.classList.add('hide');}
+/* seek with events ENABLED (suppressEvents=false): the click-state callbacks are part of the
+   choreography, so suppressing them would leave a scrubbed frame missing its click feedback. */
+function seekTo(t){const tl=PLAYER.tl; if(tl)tl.seek(t,false);}
+function playerPlay(){
+  const tl=PLAYER.tl; if(!tl)return;
+  if(tl.progress()>=1)seekTo(0);
+  revealPoster(); PLAYER.wantPlay=true; applyState();
+}
+function playerPause(){PLAYER.wantPlay=false;applyState();}
+function seekStep(i){
+  const tl=PLAYER.tl; if(!tl)return;
+  i=Math.max(0,Math.min(STORY.length-1,i));
+  revealPoster(); PLAYER.wantPlay=false;
+  tl.pause(); seekTo(PLAYER.marks[i]); syncPlayer(); applyState();
+}
+
+function buildPlayer(){
+  const scr=$('#plScreen'); if(!scr)return;
+  scr.innerHTML = `<div class="stage" id="plStage">`
+    + STORY.map((s,i)=>
+        `<div class="frame" data-fr="${i}">${frameHTML(s)}`
+        + (s.end?'':`<div class="cap"><div class="t">${esc(s.title)}</div><div class="c">${esc(s.caption)}</div></div>`)
+        + `</div>`).join('')
+    + `<svg class="wf-cursor" id="plCursor" aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="#fff" stroke="#0f2038" stroke-width="1.3" stroke-linejoin="round"><path d="M5 3l6 16 2.4-6.6L20 10z"/></svg>`
+    + `<div class="wf-click" id="plClick" aria-hidden="true"></div>`
+    + `</div>`
+    + `<div class="poster" id="plPoster"><div class="poster-in"><div class="pc">${svg(ICON.play,30)}</div><div class="poster-lbl">Play the guided tour · 35s</div></div></div>`;
+  $('#plBar').innerHTML = STORY.filter(s=>!s.end)
+    .map((s,i)=>`<button class="wf-seg" data-seg="${i}" aria-label="Step ${i+1}: ${esc(s.title)}"><i></i></button>`).join('');
+
+  buildTimeline();
+
+  const root=$('#plRoot');
+  $('#plPoster').onclick=playerPlay;
+  $('#plPlay').onclick=()=>PLAYER.wantPlay?playerPause():playerPlay();
+  $('#plPrev').onclick=()=>seekStep(PLAYER.i-1);
+  $('#plNext').onclick=()=>seekStep(PLAYER.i+1);
+  $('#plBar').onclick=e=>{const seg=e.target.closest('.wf-seg'); if(seg)seekStep(+seg.dataset.seg);};
+  const rp=$('#plReplay'); if(rp)rp.onclick=()=>{PLAYER.tl.seek(0);syncPlayer();playerPlay();};
+
+  root.addEventListener('keydown',e=>{
+    if(e.key===' '||e.key==='Spacebar'){e.preventDefault();PLAYER.wantPlay?playerPause():playerPlay();}
+    else if(e.key==='ArrowRight'){e.preventDefault();seekStep(PLAYER.i+1);}
+    else if(e.key==='ArrowLeft'){e.preventDefault();seekStep(PLAYER.i-1);}
+  });
+  /* hover the screen (not the controls) pauses, so you can read a step you care about */
+  scr.addEventListener('mouseenter',()=>{PAUSE.add('hover');applyState();});
+  scr.addEventListener('mouseleave',()=>{PAUSE.delete('hover');applyState();});
+
+  PLAYER.io=new IntersectionObserver(es=>{
+    const e=es[0];
+    if(e.intersectionRatio<.35)PAUSE.add('offscreen'); else PAUSE.delete('offscreen');
+    applyState();
+  },{threshold:[0,.35,.7]});
+  PLAYER.io.observe(root);
+
+  PLAYER.onVis=()=>{if(!$('#plRoot'))return;if(document.hidden)PAUSE.add('tab');else PAUSE.delete('tab');applyState();};
+  document.addEventListener('visibilitychange',PLAYER.onVis);
+  if(document.hidden)PAUSE.add('tab');            // built in a background tab — seed the state, don't wait for the event
+
+  PLAYER.onRz=()=>{
+    clearTimeout(PLAYER._rz);
+    PLAYER._rz=setTimeout(()=>{
+      if(!PLAYER.tl||!$('#plRoot'))return;
+      const p=PLAYER.tl.progress(),want=PLAYER.wantPlay;
+      buildTimeline();                                  // rects moved — rebuild, then restore the playhead
+      PLAYER.tl.progress(p); syncPlayer();
+      PLAYER.wantPlay=want; applyState();
+    },220);
+  };
+  window.addEventListener('resize',PLAYER.onRz);
+}
+function stopPlayer(){teardownPlayer();}   // called by go() on every route change
+function teardownPlayer(){
+  if(PLAYER.tl){PLAYER.tl.kill();PLAYER.tl=null;}
+  if(PLAYER.io){PLAYER.io.disconnect();PLAYER.io=null;}
+  if(PLAYER.onVis){document.removeEventListener('visibilitychange',PLAYER.onVis);PLAYER.onVis=null;}
+  if(PLAYER.onRz){window.removeEventListener('resize',PLAYER.onRz);PLAYER.onRz=null;}
+  clearTimeout(PLAYER._rz);
+  PAUSE.clear(); PLAYER.i=-1; PLAYER.marks=[]; PLAYER.wantPlay=false; PLAYER.playing=false;
+}
+
+/* reduced motion: a complete, static, readable storyboard — every step legible at once */
+function storyboardHTML(){
+  return `<div class="storyboard">${STORY.filter(s=>!s.end).map((s,i)=>`
+    <figure class="sb">
+      <div class="sb-shot"><div class="stage">${frameHTML(s)}</div></div>
+      <figcaption><span class="sb-n">${i+1}</span><div><b>${esc(s.title)}</b><p>${esc(s.caption)}</p></div></figcaption>
+    </figure>`).join('')}</div>
+    <p class="sb-note">Motion is reduced at your request, so the walkthrough is shown as a storyboard.</p>`;
+}
+function fitStoryboard(){
+  $$('.sb-shot').forEach(shot=>{
+    const st=shot.querySelector('.stage'); if(!st)return;
+    st.style.transform=`scale(${shot.clientWidth/STAGE_W})`;
+  });
+}
+
 function renderHome(){
-  const c=HOME.copy, story=HOME.story;
+  teardownPlayer();
+  const c=HOME, reduced=prefersReduced()||!GSAP_OK;
   $('#view-home').innerHTML=`
     <div class="home-hero"><div class="z">
       <p class="eyebrow">${esc(c.hero.tagline)}</p>
@@ -574,32 +888,63 @@ function renderHome(){
       <p>${esc(c.hero.sub)}</p>
       <div class="cta">
         <button class="btn onhero" data-route="add-patient">${svg(ICON.plus,16)} Start an analysis</button>
-        <button class="btn ghosthero" id="watchBtn">${svg(ICON.play,16)} Watch walkthrough</button>
+        <button class="btn ghosthero" id="watchBtn">${svg(ICON.play,16)} Watch the walkthrough</button>
         <button class="btn ghosthero" data-route="dashboard">Go to dashboard →</button>
       </div>
-      <div class="hstats">${[['5','AI models'],['2','new this release'],['16','demo patients']].map(s=>`<div class="s"><b class="tnum">${s[0]}</b><span>${s[1]}</span></div>`).join('')}</div>
+      <div class="hstats">${c.hero.stats.map(s=>`<div class="s"><b class="tnum">${s[0]}</b><span>${esc(s[1])}</span></div>`).join('')}</div>
     </div></div>
+
+    <div class="trust-bar">${c.trust.map(t=>`<span>${svg('<path d="M20 6 9 17l-5-5"/>',13)}${esc(t)}</span>`).join('')}</div>
+
+    <div class="sec-title"><h2>Guided walkthrough</h2><p>Upload to report, in six steps</p></div>
+    ${reduced ? storyboardHTML() : `
+    <div class="player" id="plRoot" tabindex="0" role="group" aria-label="Guided walkthrough of the Aurora console. Press space to play or pause, arrow keys to step.">
+      <div class="chrome">
+        <div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+        <div class="urlbar" id="plUrl">aurora.health/</div>
+        <div class="wf-live"><span></span>Demo</div>
+      </div>
+      <div class="screen" id="plScreen"></div>
+      <div class="controls">
+        <button class="pbtn" id="plPlay" aria-label="Play walkthrough">${svg(ICON.play,18)}</button>
+        <button class="pbtn" id="plPrev" aria-label="Previous step">${svg('<path d="M15 18l-6-6 6-6"/>',18)}</button>
+        <div class="wf-timeline" id="plBar" role="group" aria-label="Walkthrough steps"></div>
+        <button class="pbtn" id="plNext" aria-label="Next step">${svg('<path d="M9 18l6-6-6-6"/>',18)}</button>
+        <span class="pcount tnum" id="plCount">Step 1 of ${CONTENT_STEPS}</span>
+      </div>
+      <p class="sr-only" id="plLive" aria-live="polite"></p>
+    </div>`}
 
     <div class="sec-title"><h2>What Aurora does</h2></div>
     <div class="cap-grid">${c.whatItDoes.map((w,i)=>`<div class="cap"><div class="ic">${svg([ICON.scan,ICON.brain,ICON.eye,ICON.file][i]||ICON.dashboard,20)}</div><h4>${esc(w.title)}</h4><p>${esc(w.text)}</p></div>`).join('')}</div>
 
+    <div class="sec-title"><h2>Why Aurora</h2><p>Three things a score on its own can’t give you</p></div>
+    <div class="why-grid">${c.why.map(w=>`<div class="why"><div class="ic">${svg(ICON[w.icon]||ICON.brain,20)}</div><h4>${esc(w.title)}</h4><p>${esc(w.text)}</p></div>`).join('')}</div>
+
     <div class="sec-title"><h2>The models</h2><p>Five models — two new this release</p></div>
     <div class="models-grid">${c.models.map(m=>`<div class="mcard ${m.isNew?'new':''}"><div class="mh"><div class="mi">${svg(ICON.brain,20)}</div><h3>${esc(m.name)}</h3>${m.isNew?'<span class="chip new">NEW</span>':'<span class="chip">Original</span>'}</div><div class="mtags"><span class="chip">${esc(m.categories)}</span><span class="chip ${m.heatmap?'good':''}">${m.heatmap?'Grad-CAM heatmap':'No heatmap'}</span></div><p>${esc(m.blurb)}</p></div>`).join('')}</div>
 
-    <div class="sec-title"><h2>Guided walkthrough</h2><p>A quick tour of the console</p></div>
-    <div class="player">
-      <div class="chrome"><div class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div><div class="urlbar" id="plUrl">aurora.health/</div><div class="wf-live"><span></span>Demo</div></div>
-      <div class="screen" id="plScreen"></div>
-      <div class="controls">
-        <button class="pbtn" id="plPlay" aria-label="Play or pause walkthrough">${svg(ICON.play,18)}</button>
-        <button class="pbtn" id="plPrev" aria-label="Previous step">${svg('<path d="M15 18l-6-6 6-6"/>',18)}</button>
-        <div class="wf-timeline" id="plBar"></div>
-        <button class="pbtn" id="plNext" aria-label="Next step">${svg('<path d="M9 18l6-6-6-6"/>',18)}</button>
-        <span class="pcount" id="plCount">Step 1 of ${story.steps.length}</span>
+    <div class="close-band">
+      <div>
+        <h2>${esc(c.close.h)}</h2>
+        <p>${esc(c.close.p)}</p>
       </div>
-    </div>`;
-  buildPlayer(story.steps);
-  $('#watchBtn').onclick=()=>{document.querySelector('.player').scrollIntoView({behavior:'smooth',block:'center'});playPlayer();};
+      <div class="cbtns">
+        <button class="btn primary" data-route="add-patient">${svg(ICON.plus,16)} Start an analysis</button>
+        <button class="btn" data-route="documentation">Read the docs</button>
+      </div>
+    </div>
+    <p class="disclaimer">Research preview · sample data · not for clinical use.</p>`;
+
+  if(!reduced){
+    buildPlayer();
+    $('#watchBtn').onclick=()=>{$('#plRoot').scrollIntoView({behavior:'smooth',block:'center'});playerPlay();};
+  } else {
+    fitStoryboard();
+    PLAYER.onRz=()=>fitStoryboard();
+    window.addEventListener('resize',PLAYER.onRz);
+    $('#watchBtn').onclick=()=>document.querySelector('.storyboard').scrollIntoView({behavior:'auto',block:'start'});
+  }
 }
 
 /* ---- auth + init ---- */
