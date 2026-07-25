@@ -186,11 +186,99 @@ function renderExplainer(){
     <div style="font-size:.8rem;color:var(--muted)">Sent as <code>${m.value}</code> · key <code>${m.value.toLowerCase()}_${wizard.label}</code><br>Heatmap: ${heat?'✗ not produced by this model':'✓ available'}</div>`;
 }
 function genPreds(n,count){const dom=Math.floor(Math.random()*n);const out=[];for(let s=0;s<count;s++){const v=Array.from({length:n},()=>Math.random()*0.13);v[dom]+=0.5+Math.random()*0.34;const sum=v.reduce((a,b)=>a+b,0);out.push(v.map(x=>+(x/sum).toFixed(3)));}return out;}
-function runPrediction(){
-  const m=findModel(wizard.model),classes=LABEL_SETS[wizard.label];
-  const sel=[...wizard.selected].sort((a,b)=>a-b),count=sel.length||6,preds=genPreds(classes.length,count),a=avg(preds),top=a.indexOf(Math.max(...a));
+
+/* =====================================================================
+   BACKEND INTEGRATION SEAM — wire this demo to the real FastAPI backend
+   ---------------------------------------------------------------------
+   Default: AURORA_API.BASE_URL === '' -> the demo runs fully standalone
+   with SIMULATED predictions (genPreds). To use the REAL models, set
+   BASE_URL to your FastAPI origin. Full contract + steps: INTEGRATION.md
+   ===================================================================== */
+const AURORA_API = {
+  BASE_URL: '',                     // '' = mock. e.g. 'https://aurora-backend.onrender.com'
+  UPLOAD_PATH: '/prediction/upload',
+  USER_ID: 'demo-user'              // sent as user_id
+};
+window.AURORA_API = AURORA_API;     // so an integrator can flip it live from the console
+
+// STEP 1 — the backend fetches each image by URL (requests.get), so it CANNOT
+// read browser "data:" URLs. Upload the selected slices somewhere public and
+// return [{name, url}] in the SAME ORDER as dataUrls. Implement for real use.
+async function hostImagesForBackend(dataUrls){
+  throw new Error('hostImagesForBackend() not implemented — see INTEGRATION.md (Images)');
+  // Example: return dataUrls.map((_,i)=>({ name:`slice_${i+1}.png`, url: PUBLIC_URL[i] }));
+}
+
+// STEP 2 — POST /prediction/upload, then adapt the response
+//   { status, results: { "<imgUrl>": { "<Class>": prob, ... } } }
+// into the demo's internal shape { classes:[...], preds:[[...perSlice...]] }.
+async function predictViaBackend({ modelValue, label, files, patientId }){
+  const endpoint = AURORA_API.BASE_URL.replace(/\/+$/,'') + AURORA_API.UPLOAD_PATH;
+  const res = await fetch(endpoint, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({
+      files,                        // [{name,url}]
+      selected_model: modelValue,   // e.g. 'end2end' (backend lowercases it)
+      selected_label: label,        // e.g. 'GBM_MET_NON'
+      patient_id: patientId,
+      user_id: AURORA_API.USER_ID
+    })
+  });
+  if(!res.ok) throw new Error('backend HTTP '+res.status);
+  const data = await res.json();                 // { status, results }
+  const results = data.results || {};
+  const rows = files.map(f => results[f.url] || {});   // preserve the order we sent
+  // class order/spelling varies per model, so read it from the response itself
+  const first = rows.find(r => r && !r.Error && Object.keys(r).some(k => k!=='gradcam_path')) || {};
+  const classes = Object.keys(first).filter(k => k!=='gradcam_path' && k!=='Error');
+  if(!classes.length){
+    const errRow = rows.find(r => r && r.Error);          // surface the backend's real message
+    throw new Error((errRow && errRow.Error) || 'backend returned no probabilities');
+  }
+  const preds = rows.map(r => {
+    if(!r || r.Error) return classes.map(()=>0);
+    const vals = classes.map(c => Number(r[c]) || 0);
+    const s = vals.reduce((a,b)=>a+b,0) || 1;    // defensive re-normalise
+    return vals.map(v => +(v/s).toFixed(3));
+  });
+  return { classes, preds };
+}
+
+function showBackendBusy(count){
+  const s=$('#view-results');go('results',null);
+  s.innerHTML=`<div class="card pad"><div class="analyzing"><div class="pulse-ring">${svg(ICON.brain,34)}</div><div style="text-align:center"><h3 style="font-size:1.1rem">Running ${esc(modelDisplay(wizard.model))} on the backend</h3><p class="muted" style="margin:4px 0 0">Uploading &amp; analysing ${count} slice(s)…</p></div><div style="width:220px;height:6px;background:var(--surface-2);border-radius:6px;overflow:hidden"><div style="height:100%;width:66%;background:linear-gradient(90deg,var(--teal),var(--cyan))"></div></div></div></div>`;
+}
+
+function buildPatient(m,classes,preds,count,imgs){
+  const a=avg(preds),top=a.indexOf(Math.max(...a));
+  return {id:'PT-'+Date.now(),mrn:'AUR-2026-'+(10517+Math.floor(Math.random()*400)),name:wizard.name||'New Patient',age:+wizard.age||47,sex:wizard.sex||'Female',uploadedAt:new Date().toISOString().slice(0,10),model:m.label,labelSet:wizard.label,classes,predictions:preds,topClass:classes[top],confidence:+a[top].toFixed(3),status:'Analyzed',feedback:'',scanCount:count,images:imgs};
+}
+
+async function runPrediction(){
+  const m=findModel(wizard.model),labelClasses=LABEL_SETS[wizard.label];
+  const sel=[...wizard.selected].sort((a,b)=>a-b),count=sel.length||6;
   const imgs=wizard.images?sel.map(i=>wizard.images[i]):null;
-  const patient={id:'PT-'+Date.now(),mrn:'AUR-2026-'+(10517+Math.floor(Math.random()*400)),name:wizard.name||'New Patient',age:+wizard.age||47,sex:wizard.sex||'Female',uploadedAt:new Date().toISOString().slice(0,10),model:m.label,labelSet:wizard.label,classes,predictions:preds,topClass:classes[top],confidence:+a[top].toFixed(3),status:'Analyzed',feedback:'',scanCount:count,images:imgs};
+
+  // ---- REAL BACKEND (only when AURORA_API.BASE_URL is set) ----
+  if(AURORA_API.BASE_URL){
+    showBackendBusy(count);
+    try{
+      const files=await hostImagesForBackend(imgs||[]);
+      const out=await predictViaBackend({modelValue:m.value,label:wizard.label,files,patientId:'PT-'+Date.now()});
+      const patient=buildPatient(m,out.classes,out.preds,count,imgs);
+      D.patients.unshift(patient); savePatients(); logAudit('Ran '+m.label+' analysis (backend)',patient.name);
+      go('results',patient);
+      return;
+    }catch(err){
+      toast('Backend unavailable — showing a simulated result ('+err.message+')');
+      // fall through to the mock path
+    }
+  }
+
+  // ---- MOCK (default; also the fallback if the backend errors) ----
+  const preds=genPreds(labelClasses.length,count);
+  const patient=buildPatient(m,labelClasses,preds,count,imgs);
   D.patients.unshift(patient); savePatients(); logAudit('Ran '+m.label+' analysis',patient.name);
   showAnalyzing(count,()=>go('results',patient));
 }
