@@ -706,9 +706,9 @@ function voPickVoice(){
           || vs.find(v=>/^en/i.test(v.lang)) || vs[0] || null;
 }
 if(voSupported){ voPickVoice(); try{ speechSynthesis.onvoiceschanged = voPickVoice; }catch(e){} }
-function voStop(){ clearTimeout(VO._holdT); PAUSE.delete('vo'); if(voSupported){ try{ speechSynthesis.cancel(); }catch(e){} } }
+function voStop(){ clearInterval(VO._holdT); PAUSE.delete('vo'); if(voSupported){ try{ speechSynthesis.cancel(); }catch(e){} } }
 function voSpeaking(){ return voSupported && (speechSynthesis.speaking || speechSynthesis.pending); }
-function voReleaseHold(){ clearTimeout(VO._holdT); if(PAUSE.has('vo')){ PAUSE.delete('vo'); applyState(); } }
+function voReleaseHold(){ clearInterval(VO._holdT); if(PAUSE.has('vo')){ PAUSE.delete('vo'); applyState(); } }
 function voSpeak(i){
   if(!voSupported || !VO.on) return;
   const text = WT_VO[i]; if(!text) return;
@@ -717,8 +717,7 @@ function voSpeak(i){
     const u = new SpeechSynthesisUtterance(text);
     if(VO.voice) u.voice = VO.voice;
     u.rate = 1.0; u.pitch = 1; u.volume = 1;
-    u.onend = u.onerror = voReleaseHold;   // when this line finishes, release any step-boundary hold
-    VO._last = i;
+    VO._last = i;   // release is driven by the boundary poll (voSpeaking), not utterance events
     speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -888,13 +887,17 @@ function buildTimeline(){
 function syncPlayer(){
   const tl=PLAYER.tl; if(!tl)return;
   let t=tl.time();
-  /* voiceover pacing: hold at the step boundary while this step's narration is still speaking;
-     voSpeak's onend (or a 9s safety timeout) releases the hold and playback resumes. */
+  /* voiceover pacing: hold at the step boundary while this step's narration is still speaking.
+     A short poll releases the hold as soon as speech stops (robust to dropped speech events),
+     with a hard cap so it can never get stuck. */
   if(VO.on && PLAYER.wantPlay && PLAYER.i>=0){
     const nm=PLAYER.marks[PLAYER.i+1];
     if(nm!=null && t>=nm-.001 && voSpeaking()){
       t=nm-.03; tl.pause(); tl.time(t,true);
-      if(!PAUSE.has('vo')){ PAUSE.add('vo'); clearTimeout(VO._holdT); VO._holdT=setTimeout(voReleaseHold,9000); }
+      if(!PAUSE.has('vo')){
+        PAUSE.add('vo'); clearInterval(VO._holdT); let ticks=0;
+        VO._holdT=setInterval(()=>{ if(!voSpeaking() || ++ticks>=60) voReleaseHold(); },180);
+      }
     }
   }
   let i=0; for(let k=0;k<PLAYER.marks.length;k++) if(t>=PLAYER.marks[k]-.001) i=k;
@@ -926,16 +929,18 @@ function setPlayIcon(){
 function applyState(){
   const tl=PLAYER.tl; if(!tl)return;
   const was=PLAYER.playing;
+  const internalHold = PLAYER.wantPlay && PAUSE.size===1 && PAUSE.has('vo');  // ONLY reason paused is the narration hold
   const on=PLAYER.wantPlay && !PAUSE.size;
   if(on)tl.play(); else tl.pause();
-  PLAYER.playing=on; setPlayIcon();
+  PLAYER.playing = on || internalHold;                             // a pure narration-hold still counts as "playing" (keeps `was` honest)
+  setPlayIcon();
   if(!on){
-    const internalHold = PLAYER.wantPlay && PAUSE.size===1 && PAUSE.has('vo');  // ONLY reason is the narration hold → keep it
-    if(!internalHold && !PLAYER._done) voStop();                    // real pause / hover / offscreen / hidden stops narration
-  } else if(!was && PLAYER.i>=0 && !voSpeaking()){
-    voSpeak(PLAYER.i);                                              // resuming re-narrates the current step
+    if(!internalHold && !PLAYER._done) voStop();                   // real pause / hover / offscreen / hidden stops narration
+  } else if(!was && PLAYER.i>=0 && !voSpeaking() && !voAtBoundary()){
+    voSpeak(PLAYER.i);                                             // resuming mid-step re-narrates it (skip when parked at a boundary)
   }
 }
+function voAtBoundary(){ const tl=PLAYER.tl,nm=PLAYER.marks[PLAYER.i+1]; return !!(tl && nm!=null && tl.time()>=nm-.06); }
 function revealPoster(){const p=$('#plPoster'); if(p)p.classList.add('hide');}
 /* seek with events ENABLED (suppressEvents=false): the click-state callbacks are part of the
    choreography, so suppressing them would leave a scrubbed frame missing its click feedback. */
@@ -1005,9 +1010,10 @@ function buildPlayer(){
     PLAYER._rz=setTimeout(()=>{
       if(!PLAYER.tl||!$('#plRoot'))return;
       const p=PLAYER.tl.progress(),want=PLAYER.wantPlay;
+      voStop(); PLAYER.wantPlay=false; PLAYER.playing=false;   // silence + stop the rebuild from speaking/gating
       buildTimeline();                                  // rects moved — rebuild, then restore the playhead
       PLAYER.tl.progress(p); syncPlayer();
-      PLAYER.wantPlay=want; applyState();
+      PLAYER.wantPlay=want; applyState();               // resumes and re-narrates the restored step once
     },220);
   };
   window.addEventListener('resize',PLAYER.onRz);
@@ -1020,7 +1026,7 @@ function teardownPlayer(){
   if(PLAYER.onVis){document.removeEventListener('visibilitychange',PLAYER.onVis);PLAYER.onVis=null;}
   if(PLAYER.onRz){window.removeEventListener('resize',PLAYER.onRz);PLAYER.onRz=null;}
   clearTimeout(PLAYER._rz);
-  PAUSE.clear(); PLAYER.i=-1; PLAYER.marks=[]; PLAYER.wantPlay=false; PLAYER.playing=false;
+  PAUSE.clear(); PLAYER.i=-1; PLAYER.marks=[]; PLAYER.wantPlay=false; PLAYER.playing=false; PLAYER._done=false;
 }
 
 /* reduced motion: a complete, static, readable storyboard — every step legible at once */
