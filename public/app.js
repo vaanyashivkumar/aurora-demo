@@ -685,6 +685,55 @@ const PAUSE = new Set();                 // reasons the tour is auto-paused (off
 const READ_WPS = 2.5;
 const readTime = txt => .6 + String(txt).split(/\s+/).filter(Boolean).length/READ_WPS;
 
+/* ---------- walkthrough voiceover (Web Speech API — no audio files) ---------- */
+const WT_VO = [
+  "Welcome to Aurora. To start a read, click Start an analysis on the home screen.",
+  "The dashboard shows every patient at a glance. A case flagged low confidence needs a human. Click it to open.",
+  "Upload the MRI slices, pick a model including the two new ones, then run the prediction. Aurora scores every slice.",
+  "Open the results for per-slice confidence, and switch on the Grad-CAM heatmap to see where the model is looking.",
+  "Run a second model for consensus. Aurora compares both and flags the confidence gap between them.",
+  "Finally, review the recommendation and export a report-ready PDF. Upload to report in about thirty seconds.",
+  "That is the whole flow. Press replay to watch it again, or start your own analysis."
+];
+const voSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+const VO = { on: (()=>{ try{ return localStorage.getItem('aurora_vo') !== 'off'; }catch(e){ return true; } })(), voice:null, _last:-1 };
+const VO_ON_SVG  = '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19.1 5a9 9 0 0 1 0 14"/>';
+const VO_OFF_SVG = '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/>';
+function voPickVoice(){
+  if(!voSupported) return;
+  const vs = speechSynthesis.getVoices() || [];
+  VO.voice = vs.find(v=>/^en[-_]?(us|gb)/i.test(v.lang) && /natural|google|samantha|aria|jenny|zira|daniel|libby/i.test(v.name))
+          || vs.find(v=>/^en/i.test(v.lang)) || vs[0] || null;
+}
+if(voSupported){ voPickVoice(); try{ speechSynthesis.onvoiceschanged = voPickVoice; }catch(e){} }
+function voStop(){ if(voSupported){ try{ speechSynthesis.cancel(); }catch(e){} } }
+function voSpeak(i){
+  if(!voSupported || !VO.on) return;
+  const text = WT_VO[i]; if(!text) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if(VO.voice) u.voice = VO.voice;
+    u.rate = 1.03; u.pitch = 1; u.volume = 1;
+    VO._last = i;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function voSetIcon(){
+  const b = $('#plMute'); if(!b) return;
+  b.innerHTML = svg(VO.on ? VO_ON_SVG : VO_OFF_SVG, 18);
+  b.setAttribute('aria-label', VO.on ? 'Mute voiceover' : 'Unmute voiceover');
+  b.setAttribute('aria-pressed', String(VO.on));
+  b.classList.toggle('off', !VO.on);
+}
+function voToggle(){
+  VO.on = !VO.on;
+  try{ localStorage.setItem('aurora_vo', VO.on ? 'on' : 'off'); }catch(e){}
+  voSetIcon();
+  if(!VO.on) voStop();
+  else if(PLAYER.playing && PLAYER.i >= 0) voSpeak(PLAYER.i);
+}
+
 function frameHTML(s){
   if(s.end) return `<div class="wf-end">${s.body()}</div>`;
   return `<div class="wf-screen">${wfRail(s.rail)}
@@ -854,6 +903,7 @@ function stepChanged(i){
   const c=$('#plCount'); if(c)c.textContent = s.end?'Complete':`Step ${i+1} of ${CONTENT_STEPS}`;
   const live=$('#plLive');
   if(live)live.textContent = s.end?'Walkthrough complete.':`Step ${i+1} of ${CONTENT_STEPS}. ${s.title}. ${s.caption}`;
+  if(PLAYER.wantPlay) voSpeak(i);   // narrate this step as it comes on screen (only during playback)
 }
 function setPlayIcon(){
   const b=$('#plPlay'),tl=PLAYER.tl; if(!b||!tl)return;
@@ -863,9 +913,12 @@ function setPlayIcon(){
 }
 function applyState(){
   const tl=PLAYER.tl; if(!tl)return;
+  const was=PLAYER.playing;
   const on=PLAYER.wantPlay && !PAUSE.size;
   if(on)tl.play(); else tl.pause();
   PLAYER.playing=on; setPlayIcon();
+  if(!on) voStop();                                   // pausing (or offscreen/hidden) stops narration
+  else if(!was && PLAYER.i>=0) voSpeak(PLAYER.i);     // resuming re-narrates the current step
 }
 function revealPoster(){const p=$('#plPoster'); if(p)p.classList.add('hide');}
 /* seek with events ENABLED (suppressEvents=false): the click-state callbacks are part of the
@@ -907,6 +960,7 @@ function buildPlayer(){
   $('#plNext').onclick=()=>seekStep(PLAYER.i+1);
   $('#plBar').onclick=e=>{const seg=e.target.closest('.wf-seg'); if(seg)seekStep(+seg.dataset.seg);};
   const rp=$('#plReplay'); if(rp)rp.onclick=()=>{PLAYER.tl.seek(0);syncPlayer();playerPlay();};
+  const mb=$('#plMute'); if(mb)mb.onclick=voToggle; voSetIcon();
 
   root.addEventListener('keydown',e=>{
     if(e.key===' '||e.key==='Spacebar'){e.preventDefault();PLAYER.wantPlay?playerPause():playerPlay();}
@@ -942,6 +996,7 @@ function buildPlayer(){
 }
 function stopPlayer(){teardownPlayer();}   // called by go() on every route change
 function teardownPlayer(){
+  voStop();                                            // stop narration when leaving the page
   if(PLAYER.tl){PLAYER.tl.kill();PLAYER.tl=null;}
   if(PLAYER.io){PLAYER.io.disconnect();PLAYER.io=null;}
   if(PLAYER.onVis){document.removeEventListener('visibilitychange',PLAYER.onVis);PLAYER.onVis=null;}
@@ -999,6 +1054,7 @@ function renderHome(){
         <div class="wf-timeline" id="plBar" role="group" aria-label="Walkthrough steps"></div>
         <button class="pbtn" id="plNext" aria-label="Next step">${svg('<path d="M9 18l6-6-6-6"/>',18)}</button>
         <span class="pcount tnum" id="plCount">Step 1 of ${CONTENT_STEPS}</span>
+        <button class="pbtn" id="plMute" aria-label="Mute voiceover" aria-pressed="true" title="Narration on/off"></button>
       </div>
       <p class="sr-only" id="plLive" aria-live="polite"></p>
     </div>`}
