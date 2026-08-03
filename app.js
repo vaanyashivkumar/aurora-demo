@@ -706,7 +706,9 @@ function voPickVoice(){
           || vs.find(v=>/^en/i.test(v.lang)) || vs[0] || null;
 }
 if(voSupported){ voPickVoice(); try{ speechSynthesis.onvoiceschanged = voPickVoice; }catch(e){} }
-function voStop(){ if(voSupported){ try{ speechSynthesis.cancel(); }catch(e){} } }
+function voStop(){ clearTimeout(VO._holdT); PAUSE.delete('vo'); if(voSupported){ try{ speechSynthesis.cancel(); }catch(e){} } }
+function voSpeaking(){ return voSupported && (speechSynthesis.speaking || speechSynthesis.pending); }
+function voReleaseHold(){ clearTimeout(VO._holdT); if(PAUSE.has('vo')){ PAUSE.delete('vo'); applyState(); } }
 function voSpeak(i){
   if(!voSupported || !VO.on) return;
   const text = WT_VO[i]; if(!text) return;
@@ -714,7 +716,8 @@ function voSpeak(i){
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     if(VO.voice) u.voice = VO.voice;
-    u.rate = 1.03; u.pitch = 1; u.volume = 1;
+    u.rate = 1.0; u.pitch = 1; u.volume = 1;
+    u.onend = u.onerror = voReleaseHold;   // when this line finishes, release any step-boundary hold
     VO._last = i;
     speechSynthesis.speak(u);
   }catch(e){}
@@ -730,7 +733,7 @@ function voToggle(){
   VO.on = !VO.on;
   try{ localStorage.setItem('aurora_vo', VO.on ? 'on' : 'off'); }catch(e){}
   voSetIcon();
-  if(!VO.on) voStop();
+  if(!VO.on){ voStop(); applyState(); }               // muting releases any hold so playback keeps moving
   else if(PLAYER.playing && PLAYER.i >= 0) voSpeak(PLAYER.i);
 }
 
@@ -822,7 +825,7 @@ function buildTimeline(){
     return els.map(el=>({el,p:rectOf(el)}));
   });
 
-  const tl=gsap.timeline({paused:true,onUpdate:syncPlayer,onComplete:()=>{PLAYER.wantPlay=false;applyState();}});
+  const tl=gsap.timeline({paused:true,onUpdate:syncPlayer,onComplete:()=>{PLAYER._done=true;PLAYER.wantPlay=false;applyState();}});
   let cp={x:STAGE_W/2,y:STAGE_H/2+16};                        // starts under the poster's play button
   gsap.set(cur,{x:cp.x-5,y:cp.y-3,opacity:1,scale:1});   // placed before the first tick, so it is never at 0,0
   /* Pin the resting position as the timeline's first child. Without this, a seek back to 0
@@ -884,7 +887,16 @@ function buildTimeline(){
 
 function syncPlayer(){
   const tl=PLAYER.tl; if(!tl)return;
-  const t=tl.time();
+  let t=tl.time();
+  /* voiceover pacing: hold at the step boundary while this step's narration is still speaking;
+     voSpeak's onend (or a 9s safety timeout) releases the hold and playback resumes. */
+  if(VO.on && PLAYER.wantPlay && PLAYER.i>=0){
+    const nm=PLAYER.marks[PLAYER.i+1];
+    if(nm!=null && t>=nm-.001 && voSpeaking()){
+      t=nm-.03; tl.pause(); tl.time(t,true);
+      if(!PAUSE.has('vo')){ PAUSE.add('vo'); clearTimeout(VO._holdT); VO._holdT=setTimeout(voReleaseHold,9000); }
+    }
+  }
   let i=0; for(let k=0;k<PLAYER.marks.length;k++) if(t>=PLAYER.marks[k]-.001) i=k;
   if(i!==PLAYER.i) stepChanged(i);
   /* click state is a pure function of time: anything "clicked" later than the playhead is un-clicked,
@@ -917,8 +929,12 @@ function applyState(){
   const on=PLAYER.wantPlay && !PAUSE.size;
   if(on)tl.play(); else tl.pause();
   PLAYER.playing=on; setPlayIcon();
-  if(!on) voStop();                                   // pausing (or offscreen/hidden) stops narration
-  else if(!was && PLAYER.i>=0) voSpeak(PLAYER.i);     // resuming re-narrates the current step
+  if(!on){
+    const internalHold = PLAYER.wantPlay && PAUSE.size===1 && PAUSE.has('vo');  // ONLY reason is the narration hold → keep it
+    if(!internalHold && !PLAYER._done) voStop();                    // real pause / hover / offscreen / hidden stops narration
+  } else if(!was && PLAYER.i>=0 && !voSpeaking()){
+    voSpeak(PLAYER.i);                                              // resuming re-narrates the current step
+  }
 }
 function revealPoster(){const p=$('#plPoster'); if(p)p.classList.add('hide');}
 /* seek with events ENABLED (suppressEvents=false): the click-state callbacks are part of the
@@ -927,12 +943,14 @@ function seekTo(t){const tl=PLAYER.tl; if(tl)tl.seek(t,false);}
 function playerPlay(){
   const tl=PLAYER.tl; if(!tl)return;
   if(tl.progress()>=1)seekTo(0);
+  PLAYER._done=false; voStop();                       // fresh start: clear any hold / stale narration
   revealPoster(); PLAYER.wantPlay=true; applyState();
 }
 function playerPause(){PLAYER.wantPlay=false;applyState();}
 function seekStep(i){
   const tl=PLAYER.tl; if(!tl)return;
   i=Math.max(0,Math.min(STORY.length-1,i));
+  PLAYER._done=false; voStop();                       // stop narration + release any hold before jumping
   revealPoster(); PLAYER.wantPlay=false;
   tl.pause(); seekTo(PLAYER.marks[i]); syncPlayer(); applyState();
 }
