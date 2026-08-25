@@ -542,7 +542,7 @@ const HOME = {
     {title:'Report',text:'Export a PDF, record feedback, or run a consensus across two models.'}
   ],
   why:[
-    {title:'It shows its work',icon:'eye',text:'Supported predictions come with a AI focus heatmap, so you see the region behind the score — not just a number.'},
+    {title:'It shows its work',icon:'eye',text:'Supported predictions come with an AI focus heatmap, so you see the region behind the score — not just a number.'},
     {title:'It admits uncertainty',icon:'warn',text:'Low-confidence and narrow-margin slices are flagged automatically and surfaced on the dashboard before you sign off.'},
     {title:'It gets a second opinion',icon:'compare',text:'Model Consensus runs two models over the same series and shows precisely where they agree — and where they don’t.'}
   ],
