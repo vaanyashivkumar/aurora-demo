@@ -181,7 +181,7 @@ function renderExplainer(){
   const m=findModel(wizard.model),classes=LABEL_SETS[wizard.label],heat=!m.heatmap;
   const ex=$('#explainer');ex.classList.toggle('is-new',m.isNew);
   ex.innerHTML=`<div class="top"><span class="chip ${m.isNew?'new':''}">${m.isNew?'New model':'Original'}</span><span class="nm">${m.label}</span></div>
-    <p style="margin:0 0 4px;font-size:.88rem;color:var(--ink-2)">${m.isNew?'One of the two new models on this branch.':'One of the original models'+(m.heatmap?', with Grad-CAM heatmaps.':'.')} Classifies each scan into:</p>
+    <p style="margin:0 0 4px;font-size:.88rem;color:var(--ink-2)">${m.isNew?'One of the two new models on this branch.':'One of the original models'+(m.heatmap?', with AI focus heatmaps.':'.')} Classifies each scan into:</p>
     <div class="excats">${classes.map((c,i)=>`<span class="excat"><span class="sw" style="background:${COLORS[i%COLORS.length]}"></span><b>${esc(c)}</b></span>`).join('')}</div>
     <div style="font-size:.8rem;color:var(--muted)">Sent as <code>${m.value}</code> · key <code>${m.value.toLowerCase()}_${wizard.label}</code><br>Heatmap: ${heat?'✗ not produced by this model':'✓ available'}</div>`;
 }
@@ -357,11 +357,11 @@ function renderReports(){
 function renderDocs(){
   $('#docsBody').innerHTML=[
     {h:'Getting started',b:'Add a patient and upload their MRI series, choose one of the five AI models and its category set, then run the prediction. Aurora returns a per-slice breakdown, an aggregate donut, and a downloadable report.'},
-    {h:'Choosing a model',b:'Sienna, NeuroXAI and Inception are the original models and produce Grad-CAM heatmaps. <b>End-to-End CNN</b> and <b>Model 1 CNN</b> are the two new PyTorch models added on this branch — they run faster but do not produce heatmaps.'},
-    {h:'Reading results',b:'Each slice is a stacked bar of class probabilities. Click a slice to open the scan viewer and, where available, toggle the Grad-CAM heatmap. Low-confidence cases are flagged automatically for review.'},
+    {h:'Choosing a model',b:'Sienna, NeuroXAI and Inception are the original models and produce AI focus heatmaps. <b>End-to-End CNN</b> and <b>Model 1 CNN</b> are the two new PyTorch models added on this branch — they run faster but do not produce heatmaps.'},
+    {h:'Reading results',b:'Each slice is a stacked bar of class probabilities. Click a slice to open the scan viewer and, where available, toggle the AI focus heatmap. Low-confidence cases are flagged automatically for review.'},
     {h:'Model consensus',b:'Use <b>Model Consensus</b> to run two models on the same scan set and see where they agree.'},
   ].map(d=>`<div class="card pad"><h3 style="font-size:1.02rem;margin-bottom:6px">${d.h}</h3><p class="muted" style="margin:0;font-size:.9rem">${d.b}</p></div>`).join('');
-  const terms=[['GBM','Glioblastoma — aggressive primary tumour'],['MET','Metastasis — spread from elsewhere'],['NON / Non-Tumor','No tumour detected'],['TUM','Tumour present'],['Glioma / Meningioma / Pituitary','Sienna tumour types'],['Grad-CAM','Heat overlay of where the model looked']];
+  const terms=[['GBM','Glioblastoma — aggressive primary tumour'],['MET','Metastasis — spread from elsewhere'],['NON / Non-Tumor','No tumour detected'],['TUM','Tumour present'],['Glioma / Meningioma / Pituitary','Sienna tumour types'],['AI focus heatmap','Heat overlay of where the model looked']];
   $('#glossary').innerHTML=terms.map(t=>`<div class="term" style="grid-template-columns:1fr;gap:2px;padding:9px 0"><dt>${t[0]}</dt><dd>${t[1]}</dd></div>`).join('');
 }
 let settingsTab='account';
@@ -378,7 +378,7 @@ function renderAudit(){
   $('#auditTable').innerHTML=`<thead><tr><th>When</th><th>User</th><th>Action</th><th>Target</th></tr></thead><tbody>${AUDIT.length?AUDIT.map(a=>`<tr style="cursor:default"><td class="muted tnum" style="white-space:nowrap">${esc(a.when)}</td><td>${esc(a.user)}</td><td style="font-weight:600;color:var(--ink)">${esc(a.action)}</td><td class="muted">${esc(a.target)}</td></tr>`).join(''):`<tr><td colspan="4" style="text-align:center;padding:40px" class="muted">No actions logged yet — navigate around and they'll appear here.</td></tr>`}</tbody>`;
 }
 function renderAbout(){
-  const changes=[['New models in the dropdown','Shows “End-to-End CNN” / “Model 1 CNN” but sends the codes <code>end2end</code> / <code>model1cnn</code>.'],['Right categories per model','end2end → GBM/MET/NON, model1cnn → TUM/NON, kept valid when switching.'],['Results in backend order','Categories read &amp; coloured in the exact backend order so nothing is dropped.'],['Heatmap hidden for torch models','The two new models produce no Grad-CAM, so the toggle is hidden.'],['Friendly name everywhere','Results header, scan viewer and PDF show the friendly model name.']];
+  const changes=[['New models in the dropdown','Shows “End-to-End CNN” / “Model 1 CNN” but sends the codes <code>end2end</code> / <code>model1cnn</code>.'],['Right categories per model','end2end → GBM/MET/NON, model1cnn → TUM/NON, kept valid when switching.'],['Results in backend order','Categories read &amp; coloured in the exact backend order so nothing is dropped.'],['Heatmap hidden for torch models','The two new models produce no AI focus heatmap, so the toggle is hidden.'],['Friendly name everywhere','Results header, scan viewer and PDF show the friendly model name.']];
   $('#aboutBody').innerHTML=`<div class="card pad" style="margin-bottom:16px"><p style="margin:0;color:var(--ink-2)">This console is a standalone preview of the <code>adding_models</code> branch of Aurora-Frontend, running on mock data — no login or backend required. It reproduces the real app's features and adds support for two new AI models. <b>main is untouched.</b></p></div><div class="grid-2" style="align-items:start"><div class="stack">${changes.map((c,i)=>`<div class="card pad" style="display:grid;grid-template-columns:auto 1fr;gap:14px"><span class="num" style="width:26px;height:26px">${i+1}</span><div><h4 style="margin:0 0 3px;font-size:.94rem">${c[0]}</h4><p class="muted" style="margin:0;font-size:.85rem">${c[1]}</p></div></div>`).join('')}</div><div class="card pad"><h3 style="font-size:1rem;margin-bottom:10px">The two new models</h3><div class="stack" style="gap:10px">${MODELS.filter(m=>m.isNew).map(m=>`<div class="explain is-new"><div class="top"><span class="chip new">New</span><span class="nm">${m.label}</span></div><div style="font-size:.84rem;color:var(--muted)">Sends <code>${m.value}</code> · categories ${LABEL_SETS[m.labels[0]].join(' · ')} · no heatmap</div></div>`).join('')}</div></div></div>`;
 }
 
@@ -534,22 +534,22 @@ const HOME = {
     sub:'Aurora runs a patient’s full MRI series through validated AI models, scores every slice, shows you where the model is looking — and tells you when two models disagree.',
     stats:[['5','AI models'],['2','new this release'],['16','demo patients']]
   },
-  trust:['Per-slice scoring','Grad-CAM heatmaps','Model consensus','Confidence alerts','Audit trail'],
+  trust:['Per-slice scoring','AI focus heatmaps','Model consensus','Confidence alerts','Audit trail'],
   whatItDoes:[
     {title:'Upload',text:'Add a patient and drop in their MRI scan series. A few clicks, no set-up.'},
     {title:'Analyse',text:'Pick a model and its category set. Aurora scores every slice, then aggregates the series.'},
-    {title:'Explain',text:'Per-slice bars, an aggregate donut, and Grad-CAM heatmaps that show what drove the call.'},
+    {title:'Explain',text:'Per-slice bars, an aggregate donut, and AI focus heatmaps that show what drove the call.'},
     {title:'Report',text:'Export a PDF, record feedback, or run a consensus across two models.'}
   ],
   why:[
-    {title:'It shows its work',icon:'eye',text:'Supported predictions come with a Grad-CAM heatmap, so you see the region behind the score — not just a number.'},
+    {title:'It shows its work',icon:'eye',text:'Supported predictions come with a AI focus heatmap, so you see the region behind the score — not just a number.'},
     {title:'It admits uncertainty',icon:'warn',text:'Low-confidence and narrow-margin slices are flagged automatically and surfaced on the dashboard before you sign off.'},
     {title:'It gets a second opinion',icon:'compare',text:'Model Consensus runs two models over the same series and shows precisely where they agree — and where they don’t.'}
   ],
   models:[
-    {name:'Sienna',isNew:false,categories:'Non-Tumor, MET, GBM · Pituitary, Meningioma, Glioma',heatmap:true,blurb:'A versatile multi-class classifier spanning two category sets, with Grad-CAM heatmaps for slice-level explainability. Best when you need broad tumour-type coverage from a single model.'},
-    {name:'NeuroXAI',isNew:false,categories:'Non-Tumor, MET, GBM',heatmap:true,blurb:'A ResNet-based classifier built for explainability, pairing tumour scoring with Grad-CAM heatmaps. Best when interpretability of each prediction is the priority.'},
-    {name:'Inception',isNew:false,categories:'Non-Tumor, MET, GBM',heatmap:true,blurb:'An InceptionV3-based classifier for Non-Tumor, MET, and GBM, with Grad-CAM heatmaps. A strong general-purpose second opinion on the same three classes.'},
+    {name:'Sienna',isNew:false,categories:'Non-Tumor, MET, GBM · Pituitary, Meningioma, Glioma',heatmap:true,blurb:'A versatile multi-class classifier spanning two category sets, with AI focus heatmaps for slice-level explainability. Best when you need broad tumour-type coverage from a single model.'},
+    {name:'NeuroXAI',isNew:false,categories:'Non-Tumor, MET, GBM',heatmap:true,blurb:'A ResNet-based classifier built for explainability, pairing tumour scoring with AI focus heatmaps. Best when interpretability of each prediction is the priority.'},
+    {name:'Inception',isNew:false,categories:'Non-Tumor, MET, GBM',heatmap:true,blurb:'An InceptionV3-based classifier for Non-Tumor, MET, and GBM, with AI focus heatmaps. A strong general-purpose second opinion on the same three classes.'},
     {name:'End-to-End CNN',isNew:true,categories:'GBM, MET, Non-Tumor',heatmap:false,blurb:'A fast PyTorch model that classifies each slice across GBM, MET, and Non-Tumor in a single end-to-end pass. Best for quick three-class triage; no heatmap.'},
     {name:'Model 1 CNN',isNew:true,categories:'Tumour, Non-Tumor',heatmap:false,blurb:'A lightweight PyTorch model for rapid tumour-versus-no-tumour screening. Best as a first-pass filter across a scan series; no heatmap.'}
   ],
@@ -612,7 +612,7 @@ const STORY = [
   {
     title:'The explanation', loc:'Results', rail:2, url:'/analysis/results',
     heading:'Where the model is looking',
-    caption:'Grad-CAM lights up the region that drove the call. Not a black box.',
+    caption:'The AI focus heatmap lights up the region that drove the call. Not a black box.',
     body:()=>`<div class="wf-scanrow">
         <div class="wf-scan">${scanSVG(4)}<div class="wf-heat"></div></div>
         <div class="wf-slices"><div class="ct">Per-slice confidence</div>
@@ -621,7 +621,7 @@ const STORY = [
         </div>
       </div>
       <div class="wf-runrow">
-        <span class="wf-chip hot">${svg(ICON.eye,12)}&nbsp;Show Grad-CAM heatmap</span>
+        <span class="wf-chip hot">${svg(ICON.eye,12)}&nbsp;Show AI focus heatmap</span>
         <span class="wf-chip">Slice 4 · highest activation</span>
       </div>`,
     targets:['.wf-chip.hot'],
@@ -667,7 +667,7 @@ const STORY = [
     body:()=>`<div class="wf-endin">
       <div class="wf-brand" style="width:52px;height:52px;margin:0 auto 14px">${svg(ICON.brain,26)}</div>
       <h3>Upload to report in about thirty seconds.</h3>
-      <p>Five models, per-slice scoring, Grad-CAM heatmaps and a consensus check — on sample data, in your browser.</p>
+      <p>Five models, per-slice scoring, AI focus heatmaps and a consensus check — on sample data, in your browser.</p>
       <div class="wf-endcta">
         <button class="btn primary" data-route="add-patient">${svg(ICON.plus,16)} Start an analysis</button>
         <button class="btn" id="plReplay">${svg(ICON.refresh,16)} Replay</button>
@@ -690,7 +690,7 @@ const WT_VO = [
   "Welcome to Aurora. To start a read, click Start an analysis on the home screen.",
   "The dashboard shows every patient at a glance. A case flagged low confidence needs a human. Click it to open.",
   "Upload the MRI slices, pick a model including the two new ones, then run the prediction. Aurora scores every slice.",
-  "Open the results for per-slice confidence, and switch on the Grad-CAM heatmap to see where the model is looking.",
+  "Open the results for per-slice confidence, and switch on the AI focus heatmap to see where the model is looking.",
   "Run a second model for consensus. Aurora compares both and flags the confidence gap between them.",
   "Finally, review the recommendation and export a report-ready PDF. Upload to report in about thirty seconds.",
   "That is the whole flow. Press replay to watch it again, or start your own analysis."
@@ -1090,7 +1090,7 @@ function renderHome(){
     <div class="why-grid">${c.why.map(w=>`<div class="why"><div class="ic">${svg(ICON[w.icon]||ICON.brain,20)}</div><h4>${esc(w.title)}</h4><p>${esc(w.text)}</p></div>`).join('')}</div>
 
     <div class="sec-title"><h2>The models</h2><p>Five models — two new this release</p></div>
-    <div class="models-grid">${c.models.map(m=>`<div class="mcard ${m.isNew?'new':''}"><div class="mh"><div class="mi">${svg(ICON.brain,20)}</div><h3>${esc(m.name)}</h3>${m.isNew?'<span class="chip new">NEW</span>':'<span class="chip">Original</span>'}</div><div class="mtags"><span class="chip">${esc(m.categories)}</span><span class="chip ${m.heatmap?'good':''}">${m.heatmap?'Grad-CAM heatmap':'No heatmap'}</span></div><p>${esc(m.blurb)}</p></div>`).join('')}</div>
+    <div class="models-grid">${c.models.map(m=>`<div class="mcard ${m.isNew?'new':''}"><div class="mh"><div class="mi">${svg(ICON.brain,20)}</div><h3>${esc(m.name)}</h3>${m.isNew?'<span class="chip new">NEW</span>':'<span class="chip">Original</span>'}</div><div class="mtags"><span class="chip">${esc(m.categories)}</span><span class="chip ${m.heatmap?'good':''}">${m.heatmap?'AI focus heatmap':'No heatmap'}</span></div><p>${esc(m.blurb)}</p></div>`).join('')}</div>
 
     <div class="close-band">
       <div>
